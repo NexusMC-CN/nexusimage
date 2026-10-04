@@ -42,3 +42,14 @@ export interface SharpImageEngineApi {
   encode(image: NodeProcessedImage, options?: EncodeOptions): Promise<NodeEncodedImage>;
   getCapabilities(): ImageCapabilities;
 }
+
+/** Configuration for the framework-neutral Node service facade. */
+export interface NexusImageServiceOptions {
+  /** Inject an engine when the host owns its lifecycle or wants a different backend. */
+  readonly engine?: SharpImageEngineApi;
+  /** Options used when the default Sharp engine is created. */
+  readonly engineOptions?: SharpImageEngineOptions;
+}
+
+/** Public service surface shared by HTTP adapters and non-HTTP hosts. */
+export interface NexusImageServiceApi extends SharpImageEngineApi {}

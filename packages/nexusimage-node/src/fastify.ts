@@ -10,8 +10,14 @@ import {
   type ProcessOptions,
   type ResourceLimits,
 } from 'nexusimage/contracts';
-import { SharpImageEngine } from './engine.js';
-import type { NodeImageAsset, NodeImageSource, NodeProcessedImage, NodeEncodedImage } from './types.js';
+import { createNexusImageService } from './service.js';
+import type {
+  NodeEncodedImage,
+  NodeImageAsset,
+  NodeImageSource,
+  NodeProcessedImage,
+  NexusImageServiceApi,
+} from './types.js';
 
 /** Engine surface consumed by the Fastify adapter. */
 export interface NexusImageHttpEngine {
@@ -19,6 +25,9 @@ export interface NexusImageHttpEngine {
   process(source: NodeImageSource | NodeImageAsset, options?: ProcessOptions): Promise<NodeProcessedImage>;
   encode(image: NodeProcessedImage, options?: EncodeOptions): Promise<NodeEncodedImage>;
 }
+
+/** Service surface consumed by the Fastify adapter. */
+export interface NexusImageHttpService extends NexusImageHttpEngine {}
 
 export type NexusImageRoute = 'inspect' | 'process';
 
@@ -45,6 +54,8 @@ export type NexusImageErrorMapper = (
 ) => NexusImageErrorResponse | undefined | Promise<NexusImageErrorResponse | undefined>;
 
 export interface NexusImageFastifyOptions {
+  /** Inject the framework-neutral service facade. Takes precedence over engine. */
+  service?: NexusImageServiceApi;
   /** Inject a shared engine instance when the host owns its lifecycle. */
   engine?: NexusImageHttpEngine;
   /** Limits applied before the engine is invoked. Individual request options cannot increase them. */
@@ -241,14 +252,16 @@ async function applyMappedError(
   return true;
 }
 
-function defaultEngine(options: NexusImageFastifyOptions): NexusImageHttpEngine {
-  return options.engine ?? new SharpImageEngine({ limits: options.limits });
+function defaultService(options: NexusImageFastifyOptions): NexusImageHttpService {
+  if (options.service) return options.service;
+  if (options.engine) return options.engine;
+  return createNexusImageService({ engineOptions: { limits: options.limits } });
 }
 
 const plugin: FastifyPluginAsync<NexusImageFastifyOptions> = async (app, options) => {
   const hostLimits = resolveResourceLimits(options.limits);
   const maxFileBytes = asPositiveLimit(options.maxFileBytes, hostLimits.maxInputBytes || DEFAULT_MAX_FILE_BYTES);
-  const engine = defaultEngine(options);
+  const service = defaultService(options);
 
   if (options.registerMultipart !== false) {
     await app.register(multipart, {
@@ -274,7 +287,7 @@ const plugin: FastifyPluginAsync<NexusImageFastifyOptions> = async (app, options
   app.post(inspectPath, async (request, reply) => {
     try {
       const upload = await readUpload(request, maxFileBytes);
-      const metadata = await engine.inspect(upload.buffer, {
+      const metadata = await service.inspect(upload.buffer, {
         limits: capLimits(undefined, hostLimits),
       });
       return reply.type('application/json').send(metadata);
@@ -295,8 +308,8 @@ const plugin: FastifyPluginAsync<NexusImageFastifyOptions> = async (app, options
       );
       processOptions.limits = capLimits(processOptions.limits, hostLimits);
       encodeOptions.limits = capLimits(encodeOptions.limits, hostLimits);
-      processed = await engine.process(upload.buffer, processOptions);
-      const encoded = await engine.encode(processed, encodeOptions);
+      processed = await service.process(upload.buffer, processOptions);
+      const encoded = await service.encode(processed, encodeOptions);
       if (!Buffer.isBuffer(encoded.buffer)) {
         throw new NexusImageError('ENCODE_FAILED', 'encode', 'The Node image engine returned a non-Buffer result.');
       }

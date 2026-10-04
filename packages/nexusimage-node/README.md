@@ -13,6 +13,36 @@ npm install @nexusimage/node nexusimage
 The package requires Node.js 20 or newer. `nexusimage` is the shared contract
 peer dependency and `sharp` is the native image engine.
 
+## Framework-neutral service
+
+The primary Node API is an in-process service and does not require Fastify or
+an HTTP server:
+
+```ts
+import { createNexusImageService } from '@nexusimage/node';
+
+const service = createNexusImageService({
+  engineOptions: { limits: { maxInputBytes: 32 * 1024 * 1024 } },
+});
+
+const metadata = await service.inspect(inputBuffer);
+const processed = await service.process(inputBuffer, {
+  resize: { width: 1200, fit: 'contain' },
+  orientation: 'normalize',
+});
+const encoded = await service.encode(processed, {
+  type: 'image/webp',
+  quality: 0.82,
+});
+processed.dispose();
+// encoded.buffer is a Node.js Buffer.
+```
+
+Inject `engine` when the host owns a shared engine or supplies another backend.
+The service facade owns no HTTP transport, error envelope, authentication,
+storage, asynchronous job queue, or cache; those policies belong to the host
+platform.
+
 ## Engine
 
 ```ts
@@ -55,6 +85,8 @@ import nexusImageFastify from '@nexusimage/node/fastify';
 
 const app = Fastify();
 await app.register(nexusImageFastify, {
+  // `service` is optional; the adapter creates one when omitted.
+  // service: createNexusImageService(),
   limits: { maxInputBytes: 32 * 1024 * 1024 },
 });
 ```

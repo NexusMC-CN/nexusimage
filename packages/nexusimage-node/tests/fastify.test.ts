@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ImageMetadata, ProcessOptions } from 'nexusimage/contracts';
 import { NexusImageError } from 'nexusimage/contracts';
 import { nexusImageFastify, type NexusImageHttpEngine } from '../src/fastify.js';
+import { createNexusImageService } from '../src/index.js';
 import type { NodeProcessedImage } from '../src/types.js';
 
 const metadata: ImageMetadata = {
@@ -105,6 +106,36 @@ describe('Fastify adapter', () => {
     expect(response.rawPayload).toEqual(Buffer.from([1, 2, 3]));
     expect(fake.getOptions()).toMatchObject({ resize: { width: 10 }, rotate: 90 });
     expect(fake.wasDisposed()).toBe(true);
+    await app.close();
+  });
+
+  it('accepts a framework-neutral service while preserving the legacy engine option', async () => {
+    const fake = createEngine();
+    const service = createNexusImageService({
+      engine: {
+        ...fake.engine,
+        load: async () => ({ metadata, dispose: () => undefined }),
+        getCapabilities: () => ({
+          htmlImage: false,
+          offscreenCanvas: false,
+          createImageBitmap: false,
+          imageDecoder: false,
+          canvasToBlob: false,
+        }),
+      },
+    });
+    const app = Fastify();
+    await app.register(nexusImageFastify, { service });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/images/inspect',
+      headers: { 'content-type': 'image/png' },
+      payload: Buffer.from([1, 2, 3]),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ format: 'png' });
     await app.close();
   });
 
