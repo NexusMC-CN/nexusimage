@@ -22,8 +22,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci
-      - run: npm run test:ci
+          cache-dependency-path: |
+            packages/nexusimage/package-lock.json
+            packages/nexusimage-node/package-lock.json
+      - run: npm ci --prefix packages/nexusimage
+      - run: npm run test:ci --prefix packages/nexusimage
+      - run: npm ci --prefix packages/nexusimage-node
+      - run: npm run test:ci --prefix packages/nexusimage-node
 
   browser:
     name: Browser compatibility
@@ -35,6 +40,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+          cache-dependency-path: packages/nexusimage/package-lock.json
+      - run: npm ci --prefix packages/nexusimage
       - run: npx playwright install --with-deps chromium firefox webkit
+        working-directory: packages/nexusimage
       - run: npm run test:browser:playwright
+        working-directory: packages/nexusimage
