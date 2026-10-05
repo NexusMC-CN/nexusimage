@@ -18,22 +18,22 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
           cache: npm
-          cache-dependency-path: packages/nexusimage/package-lock.json
-      - run: npm ci --prefix packages/nexusimage
+          cache-dependency-path: packages/browser/package-lock.json
+      - run: npm ci --prefix packages/browser
       - name: Verify package version matches tag
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const expected = process.env.GITHUB_REF_NAME.slice(1);
-          const actual = JSON.parse(fs.readFileSync('packages/nexusimage/package.json', 'utf8')).version;
+          const actual = JSON.parse(fs.readFileSync('packages/browser/package.json', 'utf8')).version;
           if (actual !== expected) {
             console.error(`package version ${actual} does not match tag ${expected}`);
             process.exit(1);
           }
           NODE
       - run: npm run test:ci
-        working-directory: packages/nexusimage
+        working-directory: packages/browser
       - run: npm publish --provenance --access public
-        working-directory: packages/nexusimage
+        working-directory: packages/browser
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

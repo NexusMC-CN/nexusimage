@@ -3,10 +3,10 @@
   "private": true,
   "description": "NexusImage browser and Node image processing packages.",
   "scripts": {
-    "test:browser": "npm run test:ci --prefix packages/nexusimage",
-    "test:node": "npm run test:ci --prefix packages/nexusimage-node",
-    "test:ci": "npm run test:browser && npm run test:node",
-    "build": "npm run build --prefix packages/nexusimage && npm run build --prefix packages/nexusimage-node",
-    "pack:check": "npm run pack:check --prefix packages/nexusimage && npm run pack:check --prefix packages/nexusimage-node"
+    "test:browser": "npm run test:ci --prefix packages/browser",
+    "test:server": "npm run test:ci --prefix packages/server",
+    "test:ci": "npm run test:browser && npm run test:server",
+    "build": "npm run build --prefix packages/browser && npm run build --prefix packages/server",
+    "pack:check": "npm run pack:check --prefix packages/browser && npm run pack:check --prefix packages/server"
   }
 }

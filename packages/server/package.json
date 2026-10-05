@@ -62,7 +62,7 @@
   "devDependencies": {
     "@types/node": "^26.6.4",
     "fastify": "^5.12.5",
-    "nexusimage": "file:../nexusimage",
+    "nexusimage": "file:../browser",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
