@@ -1,9 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
-import { existsSync } from 'node:fs';
 
-const configuredChrome = process.env.NEXUSIMAGE_CHROME
-  ?? (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
-const chromiumUse = configuredChrome && existsSync(configuredChrome)
+const configuredChrome = process.env.NEXUSIMAGE_CHROME;
+const chromiumUse = configuredChrome
   ? { ...devices['Desktop Chrome'], launchOptions: { executablePath: configuredChrome } }
   : { ...devices['Desktop Chrome'] };
 

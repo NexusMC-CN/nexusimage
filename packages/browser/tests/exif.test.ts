@@ -50,8 +50,12 @@ function fixtureWithGpsAndLens(): Uint8Array {
     view.setUint32(offset, numerator, true);
     view.setUint32(offset + 4, denominator, true);
   };
-  rational(290, 25, 1); rational(298, 30, 1); rational(306, 0, 1);
-  rational(314, 121, 1); rational(322, 28, 1); rational(330, 0, 1);
+  rational(290, 25, 1);
+  rational(298, 30, 1);
+  rational(306, 0, 1);
+  rational(314, 121, 1);
+  rational(322, 28, 1);
+  rational(330, 0, 1);
   rational(338, 100, 1);
   rational(256, 2, 1);
   rational(264, 50, 1);
@@ -126,7 +130,10 @@ it('neutralizes orientation on a copy without losing other EXIF fields', () => {
   const changed = stripExifOrientation(original);
   expect(changed).not.toBe(original);
   expect(parseExif(original).orientation).toBe(6);
-  expect(parseExif(changed)).toMatchObject({ orientation: 1, exif: { Make: 'Canon', DateTimeOriginal: '2026:10:04 12:34:56' } });
+  expect(parseExif(changed)).toMatchObject({
+    orientation: 1,
+    exif: { Make: 'Canon', DateTimeOriginal: '2026:10:04 12:34:56' },
+  });
   expect(Array.from(changed).filter((byte, i) => byte !== original[i])).toEqual([1]);
 });
 

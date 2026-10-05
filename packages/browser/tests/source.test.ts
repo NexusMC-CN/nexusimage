@@ -24,7 +24,16 @@ it('revokes an object URL at most once', () => {
 
 it('turns response body cancellation into ABORTED while reading a URL source', async () => {
   let resolveBody!: (blob: Blob) => void;
-  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: () => new Promise<Blob>((resolve) => { resolveBody = resolve; }) })));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      blob: () =>
+        new Promise<Blob>((resolve) => {
+          resolveBody = resolve;
+        }),
+    })),
+  );
   const controller = new AbortController();
   const pending = normalizeSource('https://example.test/image.png', controller.signal);
   await Promise.resolve();

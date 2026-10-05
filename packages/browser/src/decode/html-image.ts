@@ -44,9 +44,18 @@ export function htmlImageAdapter(ctor?: ImageConstructor): DecodeAdapter {
         cleanup(false);
         let disposed = false;
         return {
-          name: 'html-image', width: loadedImage.naturalWidth, height: loadedImage.naturalHeight,
-          draw(target: DrawTarget, dx, dy, dw, dh) { target.drawImage(loadedImage, dx, dy, dw, dh); },
-          dispose() { if (!disposed) { disposed = true; cleanup(true); } },
+          name: 'html-image',
+          width: loadedImage.naturalWidth,
+          height: loadedImage.naturalHeight,
+          draw(target: DrawTarget, dx, dy, dw, dh) {
+            target.drawImage(loadedImage, dx, dy, dw, dh);
+          },
+          dispose() {
+            if (!disposed) {
+              disposed = true;
+              cleanup(true);
+            }
+          },
         };
       } catch (error) {
         cleanup(true);

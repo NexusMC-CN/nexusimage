@@ -69,6 +69,8 @@ processed.dispose();
 
 `inspect()` 会返回图片格式、尺寸、动画状态和已解析的 EXIF 元数据。普通的
 `process()` 流程只处理动画图片的首帧；存储、队列、缓存和请求策略仍属于平台职责。
+编码失败不会销毁传入的 processed image；调用方可以换用其他输出格式重试，
+并在最终完成后调用 `dispose()`。
 
 ## Fastify 适配器
 

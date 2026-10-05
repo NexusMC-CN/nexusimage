@@ -1,6 +1,14 @@
 export type FitMode = 'contain' | 'cover' | 'fill';
-export interface Size { width: number; height: number }
-export interface Rect { x: number; y: number; width: number; height: number }
+export interface Size {
+  width: number;
+  height: number;
+}
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 export type AffineMatrix = [a: number, b: number, c: number, d: number, e: number, f: number];
 
 export interface CropRect {
@@ -61,10 +69,15 @@ function calculateTransform(source: Size, options: TransformOptions = {}): Trans
   const crop = normalizeCropRect(source, options.crop);
   const degrees = options.rotate ?? 0;
   if (!Number.isFinite(degrees)) throw new RangeError('Rotation must be a finite number.');
-  const radians = degrees * Math.PI / 180;
+  const radians = (degrees * Math.PI) / 180;
   const cos = snap(Math.cos(radians));
   const sin = snap(Math.sin(radians));
-  const corners: readonly [number, number][] = [[0, 0], [crop.width, 0], [0, crop.height], [crop.width, crop.height]];
+  const corners: readonly [number, number][] = [
+    [0, 0],
+    [crop.width, 0],
+    [0, crop.height],
+    [crop.width, crop.height],
+  ];
   const rotated = corners.map(([x, y]) => [cos * x - sin * y, sin * x + cos * y] as const);
   const minX = Math.min(...rotated.map(([x]) => x));
   const maxX = Math.max(...rotated.map(([x]) => x));
@@ -107,9 +120,10 @@ export function createTransformPlan(source: Size, options: TransformOptions = {}
 
 export function calculateFitRect(source: Size, target: Size, fit: FitMode = 'contain'): Rect {
   if (fit === 'fill') return { x: 0, y: 0, width: target.width, height: target.height };
-  const ratio = fit === 'cover'
-    ? Math.max(target.width / source.width, target.height / source.height)
-    : Math.min(target.width / source.width, target.height / source.height);
+  const ratio =
+    fit === 'cover'
+      ? Math.max(target.width / source.width, target.height / source.height)
+      : Math.min(target.width / source.width, target.height / source.height);
   const width = source.width * ratio;
   const height = source.height * ratio;
   return { x: (target.width - width) / 2, y: (target.height - height) / 2, width, height };
@@ -121,14 +135,22 @@ export function getOrientedDimensions(width: number, height: number, orientation
 
 export function getOrientationMatrix(width: number, height: number, orientation: number): AffineMatrix {
   switch (orientation) {
-    case 2: return [-1, 0, 0, 1, width, 0];
-    case 3: return [-1, 0, 0, -1, width, height];
-    case 4: return [1, 0, 0, -1, 0, height];
-    case 5: return [0, 1, 1, 0, 0, 0];
-    case 6: return [0, 1, -1, 0, height, 0];
-    case 7: return [0, -1, -1, 0, height, width];
-    case 8: return [0, -1, 1, 0, 0, width];
-    default: return [1, 0, 0, 1, 0, 0];
+    case 2:
+      return [-1, 0, 0, 1, width, 0];
+    case 3:
+      return [-1, 0, 0, -1, width, height];
+    case 4:
+      return [1, 0, 0, -1, 0, height];
+    case 5:
+      return [0, 1, 1, 0, 0, 0];
+    case 6:
+      return [0, 1, -1, 0, height, 0];
+    case 7:
+      return [0, -1, -1, 0, height, width];
+    case 8:
+      return [0, -1, 1, 0, 0, width];
+    default:
+      return [1, 0, 0, 1, 0, 0];
   }
 }
 

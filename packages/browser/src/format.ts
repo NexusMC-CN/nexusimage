@@ -1,14 +1,5 @@
 /** Image container formats that NexusImage can identify from a byte signature. */
-export type ImageFormat =
-  | 'jpeg'
-  | 'png'
-  | 'webp'
-  | 'gif'
-  | 'avif'
-  | 'bmp'
-  | 'ico'
-  | 'tiff'
-  | 'unknown';
+export type ImageFormat = 'jpeg' | 'png' | 'webp' | 'gif' | 'avif' | 'bmp' | 'ico' | 'tiff' | 'unknown';
 
 export interface ImageFormatInfo {
   readonly format: ImageFormat;
@@ -64,7 +55,11 @@ function ascii(bytes: Uint8Array, offset: number, length: number): string {
 }
 
 function hasBytes(bytes: Uint8Array, offset: number, values: readonly number[]): boolean {
-  return offset >= 0 && offset + values.length <= bytes.length && values.every((value, index) => bytes[offset + index] === value);
+  return (
+    offset >= 0 &&
+    offset + values.length <= bytes.length &&
+    values.every((value, index) => bytes[offset + index] === value)
+  );
 }
 
 function isAnimatedGif(bytes: Uint8Array): boolean {
@@ -130,7 +125,8 @@ export function detectImageFormat(source: ArrayBuffer | ArrayBufferView, fallbac
     animated = isAnimatedAvif(bytes);
   } else if (hasBytes(bytes, 0, [0x42, 0x4d])) format = 'bmp';
   else if (hasBytes(bytes, 0, [0x00, 0x00, 0x01, 0x00])) format = 'ico';
-  else if (hasBytes(bytes, 0, [0x49, 0x49, 0x2a, 0x00]) || hasBytes(bytes, 0, [0x4d, 0x4d, 0x00, 0x2a])) format = 'tiff';
+  else if (hasBytes(bytes, 0, [0x49, 0x49, 0x2a, 0x00]) || hasBytes(bytes, 0, [0x4d, 0x4d, 0x00, 0x2a]))
+    format = 'tiff';
 
   if (format === 'unknown') {
     const declared = KNOWN_MIME.get(normalizedMimeType(fallbackMimeType));
@@ -148,6 +144,12 @@ export function formatFromMimeType(type?: string): ImageFormat {
 }
 
 export const supportedImageFormats: readonly ImageFormat[] = Object.freeze([
-  'jpeg', 'png', 'webp', 'gif', 'avif', 'bmp', 'ico', 'tiff',
+  'jpeg',
+  'png',
+  'webp',
+  'gif',
+  'avif',
+  'bmp',
+  'ico',
+  'tiff',
 ]);
-

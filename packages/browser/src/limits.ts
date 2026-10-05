@@ -28,12 +28,7 @@ export function resolveResourceLimits(limits?: ResourceLimits): ResolvedResource
   return resolved;
 }
 
-export function assertWithinLimit(
-  value: number,
-  limit: number,
-  label: string,
-  stage: NexusImageErrorStage,
-): void {
+export function assertWithinLimit(value: number, limit: number, label: string, stage: NexusImageErrorStage): void {
   if (value > limit) {
     throw new NexusImageError('RESOURCE_LIMIT', stage, `${label} exceeds the configured resource limit (${limit}).`);
   }
@@ -58,4 +53,3 @@ export function assertOutputDimensions(width: number, height: number, limits: Re
 export function assertEncodedBytes(size: number, limits: ResolvedResourceLimits): void {
   assertWithinLimit(size, limits.maxOutputBytes, 'Encoded bytes', 'encode');
 }
-

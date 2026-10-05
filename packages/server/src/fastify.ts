@@ -84,13 +84,16 @@ interface Upload {
 
 interface MultipartRequest {
   isMultipart?: () => boolean;
-  file?: (options?: { limits?: { fileSize?: number; files?: number } }) => Promise<{
-    file: NodeJS.ReadableStream & { truncated?: boolean };
-    filename: string;
-    mimetype: string;
-    fields: Record<string, MultipartField | string>;
-    toBuffer(): Promise<Buffer>;
-  } | undefined>;
+  file?: (options?: { limits?: { fileSize?: number; files?: number } }) => Promise<
+    | {
+        file: NodeJS.ReadableStream & { truncated?: boolean };
+        filename: string;
+        mimetype: string;
+        fields: Record<string, MultipartField | string>;
+        toBuffer(): Promise<Buffer>;
+      }
+    | undefined
+  >;
 }
 
 const DEFAULT_MAX_FILE_BYTES = 64 * 1024 * 1024;
@@ -164,7 +167,12 @@ function parseJsonObject<T>(fields: Record<string, MultipartField | string>, nam
       }
       return parsed as T;
     } catch (error) {
-      throw new NexusImageError('INVALID_SOURCE', 'source', `Multipart field "${name}" must contain valid JSON.`, error);
+      throw new NexusImageError(
+        'INVALID_SOURCE',
+        'source',
+        `Multipart field "${name}" must contain valid JSON.`,
+        error,
+      );
     }
   }
   return undefined;
@@ -203,16 +211,26 @@ async function readUpload(request: FastifyRequest, maxFileBytes: number): Promis
       buffer = await part.toBuffer();
     } catch (error) {
       const errorName = error instanceof Error ? error.name : '';
-      const errorCode = typeof error === 'object' && error !== null && 'code' in error
-        ? String((error as { code?: unknown }).code)
-        : '';
+      const errorCode =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? String((error as { code?: unknown }).code)
+          : '';
       if (part.file.truncated || errorName === 'RequestFileTooLargeError' || errorCode === 'FST_REQ_FILE_TOO_LARGE') {
-        throw new NexusImageError('RESOURCE_LIMIT', 'source', 'The uploaded image exceeds the configured file size limit.', error);
+        throw new NexusImageError(
+          'RESOURCE_LIMIT',
+          'source',
+          'The uploaded image exceeds the configured file size limit.',
+          error,
+        );
       }
       throw new NexusImageError('INVALID_SOURCE', 'source', 'Unable to read the multipart image upload.', error);
     }
     if (part.file.truncated || buffer.byteLength > maxFileBytes) {
-      throw new NexusImageError('RESOURCE_LIMIT', 'source', 'The uploaded image exceeds the configured file size limit.');
+      throw new NexusImageError(
+        'RESOURCE_LIMIT',
+        'source',
+        'The uploaded image exceeds the configured file size limit.',
+      );
     }
     return { buffer, filename: part.filename, mimetype: part.mimetype, fields: part.fields };
   }
@@ -220,13 +238,21 @@ async function readUpload(request: FastifyRequest, maxFileBytes: number): Promis
   const body = (request as FastifyRequest & { body?: unknown }).body;
   if (Buffer.isBuffer(body)) {
     if (body.byteLength > maxFileBytes) {
-      throw new NexusImageError('RESOURCE_LIMIT', 'source', 'The uploaded image exceeds the configured file size limit.');
+      throw new NexusImageError(
+        'RESOURCE_LIMIT',
+        'source',
+        'The uploaded image exceeds the configured file size limit.',
+      );
     }
     return { buffer: body, fields: {} };
   }
   if (body instanceof Uint8Array) {
     if (body.byteLength > maxFileBytes) {
-      throw new NexusImageError('RESOURCE_LIMIT', 'source', 'The uploaded image exceeds the configured file size limit.');
+      throw new NexusImageError(
+        'RESOURCE_LIMIT',
+        'source',
+        'The uploaded image exceeds the configured file size limit.',
+      );
     }
     return { buffer: Buffer.from(body), fields: {} };
   }
@@ -273,10 +299,8 @@ const plugin: FastifyPluginAsync<NexusImageFastifyOptions> = async (app, options
   if (options.registerRawBodyParser !== false) {
     for (const contentType of RAW_IMAGE_CONTENT_TYPES) {
       if (app.hasContentTypeParser(contentType)) continue;
-      app.addContentTypeParser(
-        contentType,
-        { parseAs: 'buffer', bodyLimit: maxFileBytes },
-        (_request, body, done) => done(null, body),
+      app.addContentTypeParser(contentType, { parseAs: 'buffer', bodyLimit: maxFileBytes }, (_request, body, done) =>
+        done(null, body),
       );
     }
   }
@@ -301,7 +325,8 @@ const plugin: FastifyPluginAsync<NexusImageFastifyOptions> = async (app, options
     let processed: NodeProcessedImage | undefined;
     try {
       const upload = await readUpload(request, maxFileBytes);
-      const processOptions = parseJsonObject<ProcessOptions>(upload.fields, ['process', 'processOptions', 'options']) ?? {};
+      const processOptions =
+        parseJsonObject<ProcessOptions>(upload.fields, ['process', 'processOptions', 'options']) ?? {};
       const encodeOptions = addDirectEncodeFields(
         upload.fields,
         parseJsonObject<EncodeOptions>(upload.fields, ['encode', 'encodeOptions']) ?? {},
@@ -328,4 +353,3 @@ const plugin: FastifyPluginAsync<NexusImageFastifyOptions> = async (app, options
 /** Fastify plugin exposing the platform-neutral image inspection and processing routes. */
 export const nexusImageFastify = fp(plugin, { name: 'nexusimage-fastify' });
 export default nexusImageFastify;
-

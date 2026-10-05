@@ -9,8 +9,10 @@ export function fixtureWithOrientation6AndDate(): Uint8Array {
   };
 
   // Little-endian TIFF header: II, magic 42, first IFD at byte 8.
-  tiff.set([0x49, 0x49], cursor); cursor += 2;
-  view.setUint16(cursor, 42, true); cursor += 2;
+  tiff.set([0x49, 0x49], cursor);
+  cursor += 2;
+  view.setUint16(cursor, 42, true);
+  cursor += 2;
   view.setUint32(cursor, 8, true);
 
   const ifdOffset = 8;
@@ -52,11 +54,14 @@ export function fixtureWithOrientation6AndDate(): Uint8Array {
   const appLength = exif.length + 2;
   const jpeg = new Uint8Array(2 + 2 + 2 + exif.length + 2);
   let offset = 0;
-  jpeg.set([0xff, 0xd8], offset); offset += 2;
-  jpeg.set([0xff, 0xe1], offset); offset += 2;
+  jpeg.set([0xff, 0xd8], offset);
+  offset += 2;
+  jpeg.set([0xff, 0xe1], offset);
+  offset += 2;
   jpeg[offset++] = (appLength >>> 8) & 0xff;
   jpeg[offset++] = appLength & 0xff;
-  jpeg.set(exif, offset); offset += exif.length;
+  jpeg.set(exif, offset);
+  offset += exif.length;
   jpeg.set([0xff, 0xd9], offset);
   return jpeg;
 }

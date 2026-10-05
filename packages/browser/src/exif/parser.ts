@@ -239,24 +239,39 @@ export function parseExif(input: Uint8Array | ArrayBuffer): ExifResult {
     const marker = bytes[markerOffset];
     if (marker === undefined || marker === 0x00) break;
     if (marker === 0xda || marker === 0xd9) break;
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { offset = markerOffset + 1; continue; }
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset = markerOffset + 1;
+      continue;
+    }
     const high = bytes[markerOffset + 1];
     const low = bytes[markerOffset + 2];
     if (high === undefined || low === undefined) break;
     const length = (high << 8) | low;
-    const exifPrefix = marker === 0xe1 && bytes.length >= markerOffset + 9 && bytes.subarray(markerOffset + 3, markerOffset + 9).every((v, i) => v === [0x45, 0x78, 0x69, 0x66, 0, 0][i]);
+    const exifPrefix =
+      marker === 0xe1 &&
+      bytes.length >= markerOffset + 9 &&
+      bytes.subarray(markerOffset + 3, markerOffset + 9).every((v, i) => v === [0x45, 0x78, 0x69, 0x66, 0, 0][i]);
     if (length < 2 || !rangeIsValid(bytes, markerOffset + 1, length)) {
-      return exifPrefix ? { ...empty, diagnostics: [{ code: 'EXIF_FAILED', message: 'EXIF APP1 segment is truncated' }] } : empty;
+      return exifPrefix
+        ? { ...empty, diagnostics: [{ code: 'EXIF_FAILED', message: 'EXIF APP1 segment is truncated' }] }
+        : empty;
     }
-    if (marker === 0xe1 && length >= 8 && bytes.subarray(markerOffset + 3, markerOffset + 9).every((v, i) => v === [0x45, 0x78, 0x69, 0x66, 0, 0][i])) {
+    if (
+      marker === 0xe1 &&
+      length >= 8 &&
+      bytes.subarray(markerOffset + 3, markerOffset + 9).every((v, i) => v === [0x45, 0x78, 0x69, 0x66, 0, 0][i])
+    ) {
       try {
         const exif = parseTiff(bytes, markerOffset + 9, markerOffset + 1 + length);
         const rawOrientation = exif.Orientation;
-        const orientation = typeof rawOrientation === 'number' && rawOrientation >= 1 && rawOrientation <= 8
-          ? rawOrientation : 1;
+        const orientation =
+          typeof rawOrientation === 'number' && rawOrientation >= 1 && rawOrientation <= 8 ? rawOrientation : 1;
         return { orientation, exif };
       } catch (error) {
-        return { ...empty, diagnostics: [{ code: 'EXIF_FAILED', message: error instanceof Error ? error.message : 'Invalid EXIF data' }] };
+        return {
+          ...empty,
+          diagnostics: [{ code: 'EXIF_FAILED', message: error instanceof Error ? error.message : 'Invalid EXIF data' }],
+        };
       }
     }
     offset = markerOffset + 1 + length;
@@ -277,13 +292,19 @@ export function stripExifOrientation(input: Uint8Array): Uint8Array {
     const marker = output[markerOffset];
     if (marker === undefined || marker === 0x00) break;
     if (marker === 0xda || marker === 0xd9) break;
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { offset = markerOffset + 1; continue; }
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset = markerOffset + 1;
+      continue;
+    }
     const high = output[markerOffset + 1];
     const low = output[markerOffset + 2];
     if (high === undefined || low === undefined) break;
     const length = (high << 8) | low;
     if (length < 2 || !rangeIsValid(output, markerOffset + 1, length)) break;
-    const isExif = marker === 0xe1 && length >= 8 && output.subarray(markerOffset + 3, markerOffset + 9).every((v, i) => v === [0x45, 0x78, 0x69, 0x66, 0, 0][i]);
+    const isExif =
+      marker === 0xe1 &&
+      length >= 8 &&
+      output.subarray(markerOffset + 3, markerOffset + 9).every((v, i) => v === [0x45, 0x78, 0x69, 0x66, 0, 0][i]);
     if (isExif) {
       try {
         const tiffStart = markerOffset + 9;
@@ -294,10 +315,16 @@ export function stripExifOrientation(input: Uint8Array): Uint8Array {
           const entry = findOrientationEntry(reader, reader.u32(4), new Set());
           if (entry !== undefined) {
             const little = reader.endian === 'little';
-            new DataView(output.buffer, output.byteOffset, output.byteLength).setUint16(tiffStart + entry + 8, 1, little);
+            new DataView(output.buffer, output.byteOffset, output.byteLength).setUint16(
+              tiffStart + entry + 8,
+              1,
+              little,
+            );
           }
         }
-      } catch { /* Preserve bytes when the segment is malformed. */ }
+      } catch {
+        /* Preserve bytes when the segment is malformed. */
+      }
       return output;
     }
     offset = markerOffset + 1 + length;

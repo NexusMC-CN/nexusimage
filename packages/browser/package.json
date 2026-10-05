@@ -45,7 +45,8 @@
     "test:watch": "vitest",
     "test:browser": "npm run build && node tests/browser.integration.mjs",
     "test:browser:playwright": "npm run build && playwright test",
-    "test:ci": "npm run typecheck && npm test && npm run build && npm run pack:check",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"*.ts\" \"*.json\" README.md CHANGELOG.md",
+    "test:ci": "npm run format:check && npm run typecheck && npm test && npm run build && npm run pack:check",
     "pack:check": "npm pack --dry-run",
     "prepublishOnly": "npm run test:ci",
     "prepack": "npm run build"
@@ -67,6 +68,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.4",
+    "prettier": "^3.9.9",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"

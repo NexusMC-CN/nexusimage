@@ -8,7 +8,7 @@ packages/
   server/   # Node.js：SharpImageEngine、Fastify multipart/raw body 适配器
 ```
 
-浏览器包通过 `nexusimage/contracts` 暴露运行时无关的类型、错误码、格式识别、资源限制和 EXIF 契约。服务端包只依赖这个契约入口与 Sharp，不加载浏览器适配器。
+浏览器包通过 `nexusimage/contracts` 暴露运行时无关的类型、错误码、格式识别、资源限制和 EXIF 契约。服务端包只依赖这个契约入口与 Sharp，不加载浏览器适配器。浏览器包还提供 `NexusImage.probe()`，用于在无法读取跨域字节时仅探测图片尺寸。
 
 ## 开发
 

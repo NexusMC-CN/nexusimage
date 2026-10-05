@@ -81,7 +81,9 @@ describe('NexusImageService', () => {
         channels: 4,
         background: { r: 30, g: 60, b: 90, alpha: 1 },
       },
-    }).png().toBuffer();
+    })
+      .png()
+      .toBuffer();
     const service = createNexusImageService();
 
     const inspected = await service.inspect(input);

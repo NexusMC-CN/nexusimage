@@ -51,12 +51,15 @@ function decoderConstructor(override?: AnimationDecoderConstructor): AnimationDe
 
 function metadataFromTrack(source: NormalizedSource, track: AnimationTrack | undefined): AnimationMetadata {
   const rawFrameCount = track?.frameCount;
-  const frameCount = rawFrameCount !== undefined && Number.isFinite(rawFrameCount) && rawFrameCount > 0
-    ? Math.max(1, Math.trunc(rawFrameCount))
-    : 1;
+  const frameCount =
+    rawFrameCount !== undefined && Number.isFinite(rawFrameCount) && rawFrameCount > 0
+      ? Math.max(1, Math.trunc(rawFrameCount))
+      : 1;
   const animated = track?.animated ?? frameCount > 1;
-  const trackDuration = track?.duration ?? (track?.frameDuration !== undefined ? track.frameDuration * frameCount : undefined);
-  const duration = trackDuration !== undefined && Number.isFinite(trackDuration) && trackDuration >= 0 ? trackDuration : undefined;
+  const trackDuration =
+    track?.duration ?? (track?.frameDuration !== undefined ? track.frameDuration * frameCount : undefined);
+  const duration =
+    trackDuration !== undefined && Number.isFinite(trackDuration) && trackDuration >= 0 ? trackDuration : undefined;
   return {
     format: source.format?.format ?? 'unknown',
     animated,
@@ -83,11 +86,13 @@ export async function inspectAnimation(
   let decoder: AnimationDecoder | undefined;
   try {
     const Decoder = decoderConstructor(factoryOptions.decoder);
-    if (!Decoder) throw new NexusImageError('UNSUPPORTED', 'decode', 'ImageDecoder is unavailable for animation metadata.');
-    const bytes = await awaitWithAbort(normalized.blob.arrayBuffer(), options.signal, undefined, undefined, 'decode');
+    if (!Decoder)
+      throw new NexusImageError('UNSUPPORTED', 'decode', 'ImageDecoder is unavailable for animation metadata.');
+    const bytes = normalized.bytes;
     throwIfAborted(options.signal, 'decode');
     decoder = new Decoder({ data: bytes, type: normalized.mimeType });
-    if (decoder.tracks?.ready) await awaitWithAbort(decoder.tracks.ready, options.signal, undefined, () => decoder?.close(), 'decode');
+    if (decoder.tracks?.ready)
+      await awaitWithAbort(decoder.tracks.ready, options.signal, undefined, () => decoder?.close(), 'decode');
     throwIfAborted(options.signal, 'decode');
     return metadataFromTrack(normalized, decoder.tracks?.selectedTrack);
   } catch (error) {
@@ -98,4 +103,3 @@ export async function inspectAnimation(
     normalized.dispose();
   }
 }
-

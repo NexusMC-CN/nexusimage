@@ -31,7 +31,11 @@ processed.dispose();
 asset.dispose();
 ```
 
-`load()`、`process()` 和 `encode()` 都是异步操作。`ImageDecoder` 不可用时会按顺序回退到 `createImageBitmap` 和 HTML image。可以通过 `NexusImage.getCapabilities()`、`canDecode()` 和 `canEncode()` 查询当前浏览器能力。核心包面向现代浏览器，不包含 Node.js polyfill。
+`load()`、`process()` 和 `encode()` 都是异步操作。`ImageDecoder` 不可用时会按顺序回退到 `createImageBitmap` 和 HTML image。`NexusImage.getCapabilities()`、`canDecode()` 和 `canEncode()` 返回保守的同步能力下界；需要验证当前浏览器的真实编解码器时使用异步 `probeCapabilities()`。核心包面向现代浏览器，不包含 Node.js polyfill。
+
+编码失败不会销毁传入的 `ProcessedImage`，调用方可以使用其他格式重试，并在最终完成后调用 `dispose()`。
+
+如果只需要读取尺寸，可以使用 `NexusImage.probe()`。同源或带 CORS 的地址会返回已识别的格式；当跨域 fetch 被浏览器拦截时，库会尝试使用 HTML image 读取自然尺寸，此时 `format` 和 `mimeType` 会返回未知值。这个结果不能用于 `process()` 或 `encode()`；需要处理图片时仍应提供 Blob、File 或允许 CORS 的地址。
 
 ## 资源限制和格式识别
 

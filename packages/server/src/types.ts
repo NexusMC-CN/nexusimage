@@ -1,5 +1,6 @@
 import type {
   EncodeOptions,
+  EncodedImageBase,
   ImageCapabilities,
   ImageMetadata,
   ImageSource,
@@ -23,11 +24,8 @@ export interface NodeProcessedImage {
 }
 
 /** Node encodes return a Buffer; the browser contract's Blob is intentionally not used here. */
-export interface NodeEncodedImage {
+export interface NodeEncodedImage extends EncodedImageBase {
   readonly buffer: Buffer;
-  readonly type: string;
-  readonly width: number;
-  readonly height: number;
   readonly metadata: ImageMetadata;
 }
 

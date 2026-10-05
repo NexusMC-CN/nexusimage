@@ -40,7 +40,12 @@ export interface ResourceLimits {
   fetchTimeoutMs?: number;
 }
 
-export interface LoadOptions { decode?: DecodeMode; orientation?: OrientationMode; limits?: ResourceLimits; signal?: AbortSignal; }
+export interface LoadOptions {
+  decode?: DecodeMode;
+  orientation?: OrientationMode;
+  limits?: ResourceLimits;
+  signal?: AbortSignal;
+}
 export interface ProcessOptions extends TransformOptions {
   resize?: { width?: number; height?: number; fit?: FitMode };
   background?: string;
@@ -48,7 +53,16 @@ export interface ProcessOptions extends TransformOptions {
   limits?: ResourceLimits;
   signal?: AbortSignal;
 }
-export interface EncodeOptions { type?: string; quality?: number; limits?: ResourceLimits; signal?: AbortSignal; }
+export interface EncodeOptions {
+  type?: string;
+  quality?: number;
+  limits?: ResourceLimits;
+  signal?: AbortSignal;
+}
+export interface ProbeOptions {
+  signal?: AbortSignal;
+  limits?: ResourceLimits;
+}
 
 export interface ImageCapabilities {
   imageDecoder: boolean;
@@ -73,13 +87,37 @@ export interface ImageMetadata {
   format: ImageFormat;
   animated: boolean;
 }
-export interface ImageAsset { readonly metadata: ImageMetadata; dispose(): void; }
-export interface ProcessedImage { readonly width: number; readonly height: number; readonly metadata: ImageMetadata; dispose(): void; }
-export interface EncodedImage { readonly blob: Blob; readonly type: string; readonly width: number; readonly height: number; }
+export interface ImageAsset {
+  readonly metadata: ImageMetadata;
+  dispose(): void;
+}
+export interface ProcessedImage {
+  readonly width: number;
+  readonly height: number;
+  readonly metadata: ImageMetadata;
+  dispose(): void;
+}
+/** Minimum encoded image shape shared by browser and Node adapters. */
+export interface EncodedImageBase {
+  readonly type: string;
+  readonly width: number;
+  readonly height: number;
+}
+export interface EncodedImage extends EncodedImageBase {
+  readonly blob: Blob;
+}
+export interface ImageProbeResult {
+  readonly width: number;
+  readonly height: number;
+  readonly format: ImageFormat;
+  readonly mimeType: string;
+  readonly animated: boolean;
+}
 export interface NexusImageApi {
   load(source: ImageSource, options?: LoadOptions): Promise<ImageAsset>;
   inspect(source: ImageSource, options?: LoadOptions): Promise<ImageMetadata>;
   process(source: ImageSource | ImageAsset, options?: ProcessOptions): Promise<ProcessedImage>;
   encode(image: ProcessedImage, options?: EncodeOptions): Promise<EncodedImage>;
+  probe(source: ImageSource, options?: ProbeOptions): Promise<ImageProbeResult>;
   getCapabilities(): ImageCapabilities;
 }

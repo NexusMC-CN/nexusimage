@@ -14,7 +14,9 @@ it('reads animated track metadata without decoding a frame', async () => {
       expect(options.type).toBe('image/gif');
       expect(options.data.byteLength).toBeGreaterThan(0);
     }
-    close() { closeCount += 1; }
+    close() {
+      closeCount += 1;
+    }
   };
   const original = Blob.prototype.arrayBuffer;
   Blob.prototype.arrayBuffer = async function arrayBuffer() {
@@ -23,9 +25,13 @@ it('reads animated track metadata without decoding a frame', async () => {
   };
   try {
     await expect(inspectAnimation(source, {}, { decoder })).resolves.toEqual({
-      format: 'gif', animated: true, frameCount: 12, duration: 840, repetitionCount: 2,
+      format: 'gif',
+      animated: true,
+      frameCount: 12,
+      duration: 840,
+      repetitionCount: 2,
     });
-    expect(arrayBufferReads).toBeGreaterThanOrEqual(1);
+    expect(arrayBufferReads).toBe(1);
     expect(closeCount).toBe(1);
   } finally {
     Blob.prototype.arrayBuffer = original;
@@ -38,6 +44,8 @@ it('reports a static track when the browser omits animation fields', async () =>
     close() {}
   };
   await expect(inspectAnimation(new Blob(['png'], { type: 'image/png' }), {}, { decoder })).resolves.toMatchObject({
-    format: 'png', animated: false, frameCount: 1,
+    format: 'png',
+    animated: false,
+    frameCount: 1,
   });
 });

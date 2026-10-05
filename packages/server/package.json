@@ -35,7 +35,9 @@
     "CHANGELOG.md"
   ],
   "sideEffects": false,
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -46,7 +48,8 @@
     "test:watch": "vitest",
     "pack:check": "npm pack --dry-run",
     "test:fastify": "vitest run tests/fastify.test.ts",
-    "test:ci": "npm run typecheck && npm test && npm run build && npm run pack:check",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\" \"*.json\" README.md CHANGELOG.md",
+    "test:ci": "npm run format:check && npm run typecheck && npm test && npm run build && npm run pack:check",
     "prepublishOnly": "npm run test:ci",
     "prepack": "npm run build"
   },
@@ -63,6 +66,7 @@
     "@types/node": "^26.6.4",
     "fastify": "^5.12.5",
     "nexusimage": "file:../browser",
+    "prettier": "^3.9.9",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"

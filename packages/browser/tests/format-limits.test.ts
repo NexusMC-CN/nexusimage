@@ -31,27 +31,56 @@ it('detects common image signatures and animation markers', () => {
 });
 
 it('uses a declared MIME type only as a format detection fallback', () => {
-  expect(detectImageFormat(new Uint8Array([1, 2, 3]), 'image/jpeg')).toMatchObject({ format: 'jpeg', mimeType: 'image/jpeg' });
+  expect(detectImageFormat(new Uint8Array([1, 2, 3]), 'image/jpeg')).toMatchObject({
+    format: 'jpeg',
+    mimeType: 'image/jpeg',
+  });
   expect(detectImageFormat(new Uint8Array([0xff, 0xd8, 0xff]), 'image/png').format).toBe('jpeg');
   expect(formatFromMimeType('image/jpeg; charset=binary')).toBe('jpeg');
 });
 
 it('enforces default and custom resource limits with stable errors', () => {
   expect(DEFAULT_RESOURCE_LIMITS.maxInputBytes).toBeGreaterThan(0);
-  const limits = resolveResourceLimits({ maxInputBytes: 10, maxInputPixels: 20, maxInputWidth: 10, maxInputHeight: 10, maxOutputBytes: 10, maxOutputPixels: 20, maxOutputWidth: 10, maxOutputHeight: 10, fetchTimeoutMs: 100 });
-  expect(() => assertInputBytes(11, limits)).toThrowError(expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'source' }));
-  expect(() => assertDecodedDimensions(5, 5, limits)).toThrowError(expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'decode' }));
-  expect(() => assertOutputDimensions(11, 1, limits)).toThrowError(expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'render' }));
-  expect(() => assertEncodedBytes(11, limits)).toThrowError(expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'encode' }));
-  expect(() => resolveResourceLimits({ maxInputBytes: 0 })).toThrowError(expect.objectContaining({ code: 'INVALID_SOURCE' }));
+  const limits = resolveResourceLimits({
+    maxInputBytes: 10,
+    maxInputPixels: 20,
+    maxInputWidth: 10,
+    maxInputHeight: 10,
+    maxOutputBytes: 10,
+    maxOutputPixels: 20,
+    maxOutputWidth: 10,
+    maxOutputHeight: 10,
+    fetchTimeoutMs: 100,
+  });
+  expect(() => assertInputBytes(11, limits)).toThrowError(
+    expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'source' }),
+  );
+  expect(() => assertDecodedDimensions(5, 5, limits)).toThrowError(
+    expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'decode' }),
+  );
+  expect(() => assertOutputDimensions(11, 1, limits)).toThrowError(
+    expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'render' }),
+  );
+  expect(() => assertEncodedBytes(11, limits)).toThrowError(
+    expect.objectContaining({ code: 'RESOURCE_LIMIT', stage: 'encode' }),
+  );
+  expect(() => resolveResourceLimits({ maxInputBytes: 0 })).toThrowError(
+    expect.objectContaining({ code: 'INVALID_SOURCE' }),
+  );
 });
 
 it('enforces source byte and URL timeout limits before decoding', async () => {
-  await expect(normalizeSource(new Blob(['0123456789']), undefined, { maxInputBytes: 5 }))
-    .rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'source' });
-  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: () => new Promise<Blob>(() => {}) })));
-  await expect(normalizeSource('https://example.test/slow.png', undefined, { fetchTimeoutMs: 5 }))
-    .rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'source' });
+  await expect(normalizeSource(new Blob(['0123456789']), undefined, { maxInputBytes: 5 })).rejects.toMatchObject({
+    code: 'RESOURCE_LIMIT',
+    stage: 'source',
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({ ok: true, blob: () => new Promise<Blob>(() => {}) })),
+  );
+  await expect(
+    normalizeSource('https://example.test/slow.png', undefined, { fetchTimeoutMs: 5 }),
+  ).rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'source' });
   vi.unstubAllGlobals();
 });
 
@@ -59,12 +88,11 @@ it('exposes format capability queries from browser primitives', () => {
   vi.stubGlobal('createImageBitmap', vi.fn());
   vi.stubGlobal('HTMLCanvasElement', { prototype: { toBlob: vi.fn() } });
   const capabilities = getCapabilities();
-  expect(capabilities.decodeFormats).toContain('png');
-  expect(capabilities.encodeFormats).toEqual(expect.arrayContaining(['png', 'jpeg', 'webp']));
+  expect(capabilities.decodeFormats).toEqual(['jpeg', 'png']);
+  expect(capabilities.encodeFormats).toEqual(['png']);
   expect(canDecode('image/png', capabilities)).toBe(true);
   expect(canDecode('image/heic', capabilities)).toBe(false);
-  expect(canEncode('image/webp', capabilities)).toBe(true);
+  expect(canEncode('image/webp', capabilities)).toBe(false);
   expect(canEncode('image/avif', capabilities)).toBe(false);
   vi.unstubAllGlobals();
 });
-

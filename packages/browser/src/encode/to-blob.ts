@@ -5,10 +5,16 @@ import type { CanvasSurface } from '../render/surface';
 
 const DEFAULT_TYPE = 'image/png';
 
-export async function encodeSurface(surface: CanvasSurface, options: EncodeOptions = {}): Promise<{ blob: Blob; type: string }> {
+export async function encodeSurface(
+  surface: CanvasSurface,
+  options: EncodeOptions = {},
+): Promise<{ blob: Blob; type: string }> {
   throwIfAborted(options.signal, 'encode');
   const type = options.type ?? DEFAULT_TYPE;
-  if (options.quality !== undefined && (!Number.isFinite(options.quality) || options.quality < 0 || options.quality > 1)) {
+  if (
+    options.quality !== undefined &&
+    (!Number.isFinite(options.quality) || options.quality < 0 || options.quality > 1)
+  ) {
     throw new NexusImageError('ENCODE_FAILED', 'encode', 'quality must be between 0 and 1.');
   }
   try {
@@ -25,9 +31,19 @@ export async function encodeSurface(surface: CanvasSurface, options: EncodeOptio
       return { blob, type: blob.type || type };
     }
     if (surface.canvas.toBlob) {
-      const blob = await awaitWithAbort(new Promise<Blob>((resolve, reject) => {
-        surface.canvas.toBlob!((value) => value ? resolve(value) : reject(new Error('Canvas returned an empty Blob.')), type, options.quality);
-      }), options.signal, undefined, undefined, 'encode');
+      const blob = await awaitWithAbort(
+        new Promise<Blob>((resolve, reject) => {
+          surface.canvas.toBlob!(
+            (value) => (value ? resolve(value) : reject(new Error('Canvas returned an empty Blob.'))),
+            type,
+            options.quality,
+          );
+        }),
+        options.signal,
+        undefined,
+        undefined,
+        'encode',
+      );
       throwIfAborted(options.signal, 'encode');
       return { blob, type: blob.type || type };
     }

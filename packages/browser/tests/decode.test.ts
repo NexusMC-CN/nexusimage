@@ -6,29 +6,47 @@ import { htmlImageAdapter } from '../src/decode/html-image';
 
 const source = {
   blob: new Blob(['image'], { type: 'image/png' }),
+  bytes: new Uint8Array([1, 2, 3]).buffer,
   mimeType: 'image/png',
   size: 5,
   dispose() {},
 };
 
 it('uses ImageDecoder before createImageBitmap in auto mode', () => {
-  const decoder = selectDecoder({ imageDecoder: true, createImageBitmap: true, htmlImage: true, offscreenCanvas: true, canvasToBlob: true }, 'auto');
+  const decoder = selectDecoder(
+    { imageDecoder: true, createImageBitmap: true, htmlImage: true, offscreenCanvas: true, canvasToBlob: true },
+    'auto',
+  );
   expect(decoder.name).toBe('image-decoder');
 });
 
 it('reports explicit decoder capability errors', () => {
-  expect(() => selectDecoder({ imageDecoder: false, createImageBitmap: false, htmlImage: false, offscreenCanvas: false, canvasToBlob: false }, 'image-decoder'))
-    .toThrowError(expect.objectContaining({ code: 'UNSUPPORTED', stage: 'decode' }));
+  expect(() =>
+    selectDecoder(
+      { imageDecoder: false, createImageBitmap: false, htmlImage: false, offscreenCanvas: false, canvasToBlob: false },
+      'image-decoder',
+    ),
+  ).toThrowError(expect.objectContaining({ code: 'UNSUPPORTED', stage: 'decode' }));
 });
 
 it('closes ImageDecoder after decoding while retaining the frame until dispose', async () => {
   let decoderCloseCount = 0;
   let frameCloseCount = 0;
-  const frame = { displayWidth: 4, displayHeight: 2, close: () => { frameCloseCount += 1; } };
+  const frame = {
+    displayWidth: 4,
+    displayHeight: 2,
+    close: () => {
+      frameCloseCount += 1;
+    },
+  };
   class FakeDecoder {
     constructor(_options: { data: ArrayBuffer; type: string }) {}
-    async decode() { return { image: frame }; }
-    close() { decoderCloseCount += 1; }
+    async decode() {
+      return { image: frame };
+    }
+    close() {
+      decoderCloseCount += 1;
+    }
   }
 
   const decoded = await imageDecoderAdapter(FakeDecoder).decode(source);
@@ -42,9 +60,12 @@ it('closes ImageDecoder after decoding while retaining the frame until dispose',
 
 it('closes a createImageBitmap result that arrives after cancellation', async () => {
   let resolveBitmap!: (bitmap: { width: number; height: number; close: () => void }) => void;
-  const create = vi.fn(() => new Promise<{ width: number; height: number; close: () => void }>((resolve) => {
-    resolveBitmap = resolve;
-  }));
+  const create = vi.fn(
+    () =>
+      new Promise<{ width: number; height: number; close: () => void }>((resolve) => {
+        resolveBitmap = resolve;
+      }),
+  );
   const controller = new AbortController();
   const pending = createImageBitmapAdapter(create).decode(source, controller.signal);
 
@@ -67,7 +88,9 @@ it('revokes the HTML image URL and detaches events on cancellation', async () =>
     naturalHeight = 2;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(_value: string) { FakeImage.instance = this; }
+    set src(_value: string) {
+      FakeImage.instance = this;
+    }
   }
 
   const controller = new AbortController();
@@ -93,7 +116,9 @@ it('revokes the HTML image URL once and detaches events after success', async ()
     naturalHeight = 2;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(_value: string) { FakeImage.instance = this; }
+    set src(_value: string) {
+      FakeImage.instance = this;
+    }
   }
 
   const pending = htmlImageAdapter(FakeImage).decode(source);
@@ -118,7 +143,9 @@ it('revokes the HTML image URL once and detaches events after failure', async ()
     naturalHeight = 0;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(_value: string) { FakeImage.instance = this; }
+    set src(_value: string) {
+      FakeImage.instance = this;
+    }
   }
 
   const pending = htmlImageAdapter(FakeImage).decode(source);

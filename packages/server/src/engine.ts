@@ -49,11 +49,16 @@ const assets = new WeakMap<object, InternalAsset>();
 const processedImages = new WeakMap<object, InternalProcessed>();
 
 const NODE_DECODE_FORMATS: readonly ImageFormat[] = Object.freeze([
-  'jpeg', 'png', 'webp', 'gif', 'avif', 'bmp', 'ico', 'tiff',
+  'jpeg',
+  'png',
+  'webp',
+  'gif',
+  'avif',
+  'bmp',
+  'ico',
+  'tiff',
 ]);
-const NODE_ENCODE_FORMATS: readonly ImageFormat[] = Object.freeze([
-  'jpeg', 'png', 'webp', 'gif', 'avif', 'tiff',
-]);
+const NODE_ENCODE_FORMATS: readonly ImageFormat[] = Object.freeze(['jpeg', 'png', 'webp', 'gif', 'avif', 'tiff']);
 
 function isBlob(value: unknown): value is Blob {
   return typeof Blob !== 'undefined' && value instanceof Blob;
@@ -79,7 +84,10 @@ function mergeLimits(defaults: ReturnType<typeof resolveResourceLimits>, limits?
   return resolveResourceLimits(merged);
 }
 
-async function toInputBuffer(source: NodeImageSource, signal?: AbortSignal): Promise<{ buffer: Buffer; mimeType?: string }> {
+async function toInputBuffer(
+  source: NodeImageSource,
+  signal?: AbortSignal,
+): Promise<{ buffer: Buffer; mimeType?: string }> {
   throwIfAborted(signal, 'source');
   if (Buffer.isBuffer(source)) return { buffer: Buffer.from(source) };
   if (source instanceof Uint8Array) return { buffer: Buffer.from(source.buffer, source.byteOffset, source.byteLength) };
@@ -94,7 +102,11 @@ async function toInputBuffer(source: NodeImageSource, signal?: AbortSignal): Pro
       throw new NexusImageError('INVALID_SOURCE', 'source', 'Unable to read Blob source.', error);
     }
   }
-  throw new NexusImageError('INVALID_SOURCE', 'source', 'NodeImageSource must be a Buffer, Uint8Array, ArrayBuffer, Blob, or File.');
+  throw new NexusImageError(
+    'INVALID_SOURCE',
+    'source',
+    'NodeImageSource must be a Buffer, Uint8Array, ArrayBuffer, Blob, or File.',
+  );
 }
 
 function sourceSizeHint(source: NodeImageSource): number | undefined {
@@ -107,28 +119,36 @@ function sourceSizeHint(source: NodeImageSource): number | undefined {
 
 function formatFromSharpName(value?: string): ImageFormat {
   switch (value?.toLowerCase()) {
-    case 'jpeg': case 'jpg': return 'jpeg';
-    case 'png': return 'png';
-    case 'webp': return 'webp';
-    case 'gif': return 'gif';
-    case 'avif': return 'avif';
-    case 'bmp': return 'bmp';
-    case 'ico': return 'ico';
-    case 'tiff': case 'tif': return 'tiff';
-    default: return 'unknown';
+    case 'jpeg':
+    case 'jpg':
+      return 'jpeg';
+    case 'png':
+      return 'png';
+    case 'webp':
+      return 'webp';
+    case 'gif':
+      return 'gif';
+    case 'avif':
+      return 'avif';
+    case 'bmp':
+      return 'bmp';
+    case 'ico':
+      return 'ico';
+    case 'tiff':
+    case 'tif':
+      return 'tiff';
+    default:
+      return 'unknown';
   }
 }
 
-function createMetadata(
-  input: Buffer,
-  mimeType: string | undefined,
-  metadata: Metadata,
-): ImageMetadata {
+function createMetadata(input: Buffer, mimeType: string | undefined, metadata: Metadata): ImageMetadata {
   const detected = detectImageFormat(input, mimeType);
   const format = detected.format === 'unknown' ? formatFromSharpName(metadata.format) : detected.format;
-  const resolvedMimeType = detected.format === 'unknown' && format !== 'unknown'
-    ? formatMimeType(format)
-    : (detected.mimeType || mimeType || formatMimeType(format));
+  const resolvedMimeType =
+    detected.format === 'unknown' && format !== 'unknown'
+      ? formatMimeType(format)
+      : detected.mimeType || mimeType || formatMimeType(format);
   const exif = parseExif(input);
   const width = metadata.width;
   const height = metadata.pageHeight ?? metadata.height;
@@ -163,14 +183,34 @@ function assertFinitePositive(value: number, label: string): void {
   }
 }
 
-function integerCrop(crop: NonNullable<ProcessOptions['crop']>, width: number, height: number): { left: number; top: number; width: number; height: number } {
+function integerCrop(
+  crop: NonNullable<ProcessOptions['crop']>,
+  width: number,
+  height: number,
+): { left: number; top: number; width: number; height: number } {
   for (const [name, value] of Object.entries(crop)) {
-    if (!Number.isFinite(value) || ((name === 'x' || name === 'y') ? value < 0 : value <= 0)) {
-      throw new NexusImageError('RENDER_FAILED', 'render', `${name === 'x' || name === 'y' ? `crop.${name} must be non-negative` : `crop.${name} must be positive`} and finite.`);
+    if (!Number.isFinite(value) || (name === 'x' || name === 'y' ? value < 0 : value <= 0)) {
+      throw new NexusImageError(
+        'RENDER_FAILED',
+        'render',
+        `${name === 'x' || name === 'y' ? `crop.${name} must be non-negative` : `crop.${name} must be positive`} and finite.`,
+      );
     }
   }
-  const result = { left: Math.round(crop.x), top: Math.round(crop.y), width: Math.round(crop.width), height: Math.round(crop.height) };
-  if (result.left < 0 || result.top < 0 || result.width < 1 || result.height < 1 || result.left + result.width > width || result.top + result.height > height) {
+  const result = {
+    left: Math.round(crop.x),
+    top: Math.round(crop.y),
+    width: Math.round(crop.width),
+    height: Math.round(crop.height),
+  };
+  if (
+    result.left < 0 ||
+    result.top < 0 ||
+    result.width < 1 ||
+    result.height < 1 ||
+    result.left + result.width > width ||
+    result.top + result.height > height
+  ) {
     throw new NexusImageError('RENDER_FAILED', 'render', 'crop must be contained within the decoded image.');
   }
   return result;
@@ -182,34 +222,50 @@ function orientedDimensions(width: number, height: number, orientation: number):
 
 function rotatedDimensions(width: number, height: number, degrees: number): { width: number; height: number } {
   if (!degrees) return { width, height };
-  const radians = Math.abs(degrees) * Math.PI / 180;
+  const radians = (Math.abs(degrees) * Math.PI) / 180;
   return {
     width: Math.max(1, Math.ceil(Math.abs(width * Math.cos(radians)) + Math.abs(height * Math.sin(radians)))),
     height: Math.max(1, Math.ceil(Math.abs(width * Math.sin(radians)) + Math.abs(height * Math.cos(radians)))),
   };
 }
 
-function estimatedOutputDimensions(metadata: ImageMetadata, options: ProcessOptions): { width: number; height: number } {
+function estimatedOutputDimensions(
+  metadata: ImageMetadata,
+  options: ProcessOptions,
+): { width: number; height: number } {
   const normalize = (options.orientation ?? 'normalize') === 'normalize';
-  let { width, height } = normalize ? orientedDimensions(metadata.width, metadata.height, metadata.orientation) : { width: metadata.width, height: metadata.height };
+  let { width, height } = normalize
+    ? orientedDimensions(metadata.width, metadata.height, metadata.orientation)
+    : { width: metadata.width, height: metadata.height };
   if (options.crop) {
     const crop = integerCrop(options.crop, width, height);
     width = crop.width;
     height = crop.height;
   }
   if (options.rotate !== undefined) {
-    if (!Number.isFinite(options.rotate)) throw new NexusImageError('RENDER_FAILED', 'render', 'rotate must be finite.');
+    if (!Number.isFinite(options.rotate))
+      throw new NexusImageError('RENDER_FAILED', 'render', 'rotate must be finite.');
     ({ width, height } = rotatedDimensions(width, height, options.rotate));
   }
   if (options.resize) {
     const resize = options.resize;
     if (resize.width !== undefined) assertFinitePositive(resize.width, 'resize.width');
     if (resize.height !== undefined) assertFinitePositive(resize.height, 'resize.height');
-    if (resize.width !== undefined && resize.height !== undefined) ({ width, height } = { width: Math.round(resize.width), height: Math.round(resize.height) });
-    else if (resize.width !== undefined) ({ width, height } = { width: Math.round(resize.width), height: Math.max(1, Math.round(resize.width * height / width)) });
-    else if (resize.height !== undefined) ({ width, height } = { width: Math.max(1, Math.round(resize.height * width / height)), height: Math.round(resize.height) });
+    if (resize.width !== undefined && resize.height !== undefined)
+      ({ width, height } = { width: Math.round(resize.width), height: Math.round(resize.height) });
+    else if (resize.width !== undefined)
+      ({ width, height } = {
+        width: Math.round(resize.width),
+        height: Math.max(1, Math.round((resize.width * height) / width)),
+      });
+    else if (resize.height !== undefined)
+      ({ width, height } = {
+        width: Math.max(1, Math.round((resize.height * width) / height)),
+        height: Math.round(resize.height),
+      });
   }
-  if (width < 1 || height < 1) throw new NexusImageError('RENDER_FAILED', 'render', 'Output dimensions must be at least one pixel.');
+  if (width < 1 || height < 1)
+    throw new NexusImageError('RENDER_FAILED', 'render', 'Output dimensions must be at least one pixel.');
   return { width, height };
 }
 
@@ -217,13 +273,32 @@ function applyEncoding(pipeline: Sharp, type: string, quality?: number): { pipel
   const format = formatFromMimeType(type);
   const qualityValue = quality === undefined ? undefined : Math.max(1, Math.round(quality * 100));
   switch (format) {
-    case 'jpeg': return { pipeline: pipeline.jpeg(qualityValue === undefined ? {} : { quality: qualityValue }), type: 'image/jpeg' };
-    case 'png': return { pipeline: pipeline.png(qualityValue === undefined ? {} : { quality: qualityValue }), type: 'image/png' };
-    case 'webp': return { pipeline: pipeline.webp(qualityValue === undefined ? {} : { quality: qualityValue }), type: 'image/webp' };
-    case 'avif': return { pipeline: pipeline.avif(qualityValue === undefined ? {} : { quality: qualityValue }), type: 'image/avif' };
-    case 'gif': return { pipeline: pipeline.gif(), type: 'image/gif' };
-    case 'tiff': return { pipeline: pipeline.tiff(qualityValue === undefined ? {} : { quality: qualityValue }), type: 'image/tiff' };
-    default: throw new NexusImageError('ENCODE_FAILED', 'encode', `Unsupported output type: ${type}.`);
+    case 'jpeg':
+      return {
+        pipeline: pipeline.jpeg(qualityValue === undefined ? {} : { quality: qualityValue }),
+        type: 'image/jpeg',
+      };
+    case 'png':
+      return { pipeline: pipeline.png(qualityValue === undefined ? {} : { quality: qualityValue }), type: 'image/png' };
+    case 'webp':
+      return {
+        pipeline: pipeline.webp(qualityValue === undefined ? {} : { quality: qualityValue }),
+        type: 'image/webp',
+      };
+    case 'avif':
+      return {
+        pipeline: pipeline.avif(qualityValue === undefined ? {} : { quality: qualityValue }),
+        type: 'image/avif',
+      };
+    case 'gif':
+      return { pipeline: pipeline.gif(), type: 'image/gif' };
+    case 'tiff':
+      return {
+        pipeline: pipeline.tiff(qualityValue === undefined ? {} : { quality: qualityValue }),
+        type: 'image/tiff',
+      };
+    default:
+      throw new NexusImageError('ENCODE_FAILED', 'encode', `Unsupported output type: ${type}.`);
   }
 }
 
@@ -256,11 +331,20 @@ export class SharpImageEngine implements SharpImageEngineApi {
     const limits = this.limits(options.limits);
     const hintedSize = sourceSizeHint(source);
     if (hintedSize !== undefined && hintedSize > limits.maxInputBytes) {
-      throw new NexusImageError('RESOURCE_LIMIT', 'source', `Input bytes exceeds the configured resource limit (${limits.maxInputBytes}).`);
+      throw new NexusImageError(
+        'RESOURCE_LIMIT',
+        'source',
+        `Input bytes exceeds the configured resource limit (${limits.maxInputBytes}).`,
+      );
     }
     const input = await toInputBuffer(source, options.signal);
     if (input.buffer.byteLength === 0) throw new NexusImageError('INVALID_SOURCE', 'source', 'Image source is empty.');
-    if (input.buffer.byteLength > limits.maxInputBytes) throw new NexusImageError('RESOURCE_LIMIT', 'source', `Input bytes exceeds the configured resource limit (${limits.maxInputBytes}).`);
+    if (input.buffer.byteLength > limits.maxInputBytes)
+      throw new NexusImageError(
+        'RESOURCE_LIMIT',
+        'source',
+        `Input bytes exceeds the configured resource limit (${limits.maxInputBytes}).`,
+      );
     throwIfAborted(options.signal, 'decode');
     let metadata: Metadata;
     try {
@@ -302,7 +386,8 @@ export class SharpImageEngine implements SharpImageEngineApi {
     let orientationMode: 'preserve' | 'normalize' = 'normalize';
     if (typeof source === 'object' && source !== null && assets.has(source)) {
       const internal = assets.get(source)!;
-      if (internal.disposed || !internal.buffer) throw new NexusImageError('INVALID_SOURCE', 'source', 'Image asset has been disposed.');
+      if (internal.disposed || !internal.buffer)
+        throw new NexusImageError('INVALID_SOURCE', 'source', 'Image asset has been disposed.');
       buffer = internal.buffer;
       metadata = internal.metadata;
       orientationMode = internal.orientationMode;
@@ -315,7 +400,11 @@ export class SharpImageEngine implements SharpImageEngineApi {
     const limits = this.limits(options.limits);
     assertDecodedDimensions(metadata.width, metadata.height, limits);
     if (buffer.byteLength > limits.maxInputBytes) {
-      throw new NexusImageError('RESOURCE_LIMIT', 'source', `Input bytes exceeds the configured resource limit (${limits.maxInputBytes}).`);
+      throw new NexusImageError(
+        'RESOURCE_LIMIT',
+        'source',
+        `Input bytes exceeds the configured resource limit (${limits.maxInputBytes}).`,
+      );
     }
     const estimate = estimatedOutputDimensions(metadata, effectiveOptions);
     assertOutputDimensions(estimate.width, estimate.height, limits);
@@ -325,10 +414,16 @@ export class SharpImageEngine implements SharpImageEngineApi {
       const normalize = effectiveOptions.orientation === 'normalize';
       if (normalize && metadata.orientation !== 1) pipeline = pipeline.rotate();
       if (effectiveOptions.crop) {
-        const oriented = normalize ? orientedDimensions(metadata.width, metadata.height, metadata.orientation) : { width: metadata.width, height: metadata.height };
+        const oriented = normalize
+          ? orientedDimensions(metadata.width, metadata.height, metadata.orientation)
+          : { width: metadata.width, height: metadata.height };
         pipeline = pipeline.extract(integerCrop(effectiveOptions.crop, oriented.width, oriented.height));
       }
-      if (effectiveOptions.rotate !== undefined && effectiveOptions.rotate !== 0) pipeline = pipeline.rotate(effectiveOptions.rotate, effectiveOptions.background ? { background: effectiveOptions.background } : undefined);
+      if (effectiveOptions.rotate !== undefined && effectiveOptions.rotate !== 0)
+        pipeline = pipeline.rotate(
+          effectiveOptions.rotate,
+          effectiveOptions.background ? { background: effectiveOptions.background } : undefined,
+        );
       if (effectiveOptions.flip?.horizontal) pipeline = pipeline.flop();
       if (effectiveOptions.flip?.vertical) pipeline = pipeline.flip();
       if (effectiveOptions.resize) {
@@ -372,20 +467,37 @@ export class SharpImageEngine implements SharpImageEngineApi {
   async encode(image: NodeProcessedImage, options: EncodeOptions = {}): Promise<NodeEncodedImage> {
     throwIfAborted(options.signal, 'encode');
     const internal = processedImages.get(image);
-    if (!internal || internal.disposed || !internal.buffer) throw new NexusImageError('INVALID_SOURCE', 'encode', 'Processed image has been disposed or is not from NexusImage.');
+    if (!internal || internal.disposed || !internal.buffer)
+      throw new NexusImageError(
+        'INVALID_SOURCE',
+        'encode',
+        'Processed image has been disposed or is not from NexusImage.',
+      );
     const limits = this.limits(options.limits);
     const type = options.type ?? 'image/png';
     try {
-      if (options.quality !== undefined && (!Number.isFinite(options.quality) || options.quality < 0 || options.quality > 1)) {
+      if (
+        options.quality !== undefined &&
+        (!Number.isFinite(options.quality) || options.quality < 0 || options.quality > 1)
+      ) {
         throw new NexusImageError('ENCODE_FAILED', 'encode', 'quality must be between 0 and 1.');
       }
-      const encoded = await applyEncoding(sharp(internal.buffer, { animated: false }), type, options.quality).pipeline.toBuffer();
+      const encoded = await applyEncoding(
+        sharp(internal.buffer, { animated: false }),
+        type,
+        options.quality,
+      ).pipeline.toBuffer();
       throwIfAborted(options.signal, 'encode');
       assertEncodedBytes(encoded.byteLength, limits);
       const encodedType = formatMimeType(formatFromMimeType(type));
-      return { buffer: encoded, type: encodedType, width: internal.metadata.width, height: internal.metadata.height, metadata: internal.metadata };
+      return {
+        buffer: encoded,
+        type: encodedType,
+        width: internal.metadata.width,
+        height: internal.metadata.height,
+        metadata: internal.metadata,
+      };
     } catch (error) {
-      releaseProcessed(internal);
       if (error instanceof NexusImageError) throw error;
       throw new NexusImageError('ENCODE_FAILED', 'encode', 'Sharp could not encode the image.', error);
     }

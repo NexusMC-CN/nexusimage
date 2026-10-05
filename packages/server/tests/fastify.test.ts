@@ -17,7 +17,10 @@ const metadata: ImageMetadata = {
   animated: false,
 };
 
-function multipart(parts: Array<{ name: string; value: string | Buffer; filename?: string; type?: string }>): { body: Buffer; contentType: string } {
+function multipart(parts: Array<{ name: string; value: string | Buffer; filename?: string; type?: string }>): {
+  body: Buffer;
+  contentType: string;
+} {
   const boundary = 'nexus-image-test-boundary';
   const chunks: Buffer[] = [];
   for (const part of parts) {
@@ -25,7 +28,11 @@ function multipart(parts: Array<{ name: string; value: string | Buffer; filename
       ? `Content-Disposition: form-data; name="${part.name}"; filename="${part.filename}"`
       : `Content-Disposition: form-data; name="${part.name}"`;
     const header = `--${boundary}\r\n${disposition}\r\n${part.filename ? `Content-Type: ${part.type ?? 'application/octet-stream'}\r\n` : ''}\r\n`;
-    chunks.push(Buffer.from(header), typeof part.value === 'string' ? Buffer.from(part.value) : part.value, Buffer.from('\r\n'));
+    chunks.push(
+      Buffer.from(header),
+      typeof part.value === 'string' ? Buffer.from(part.value) : part.value,
+      Buffer.from('\r\n'),
+    );
   }
   chunks.push(Buffer.from(`--${boundary}--\r\n`));
   return { body: Buffer.concat(chunks), contentType: `multipart/form-data; boundary=${boundary}` };
@@ -46,7 +53,9 @@ function createEngine() {
         width: 2,
         height: 1,
         metadata,
-        dispose: () => { disposed = true; },
+        dispose: () => {
+          disposed = true;
+        },
       };
       return processed;
     },
@@ -80,9 +89,16 @@ describe('Fastify adapter', () => {
     const fake = createEngine();
     const app = Fastify();
     await app.register(nexusImageFastify, { engine: fake.engine });
-    const payload = multipart([{ name: 'file', filename: 'image.png', type: 'image/png', value: Buffer.from([1, 2, 3]) }]);
+    const payload = multipart([
+      { name: 'file', filename: 'image.png', type: 'image/png', value: Buffer.from([1, 2, 3]) },
+    ]);
 
-    const response = await app.inject({ method: 'POST', url: '/api/images/inspect', headers: { 'content-type': payload.contentType }, payload: payload.body });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/images/inspect',
+      headers: { 'content-type': payload.contentType },
+      payload: payload.body,
+    });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ width: 2, height: 1, format: 'png' });
     await app.close();
@@ -99,7 +115,12 @@ describe('Fastify adapter', () => {
       { name: 'file', filename: 'image.png', type: 'image/png', value: Buffer.from([1, 2, 3]) },
     ]);
 
-    const response = await app.inject({ method: 'POST', url: '/api/images/process', headers: { 'content-type': payload.contentType }, payload: payload.body });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/images/process',
+      headers: { 'content-type': payload.contentType },
+      payload: payload.body,
+    });
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toContain('image/webp');
     expect(response.headers['content-length']).toBe('3');
@@ -152,10 +173,14 @@ describe('Fastify adapter', () => {
     });
     const payload = multipart([{ name: 'file', filename: 'large.png', value: Buffer.from([1, 2, 3]) }]);
 
-    const response = await app.inject({ method: 'POST', url: '/api/images/inspect', headers: { 'content-type': payload.contentType }, payload: payload.body });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/images/inspect',
+      headers: { 'content-type': payload.contentType },
+      payload: payload.body,
+    });
     expect(response.statusCode).toBe(413);
     expect(response.json()).toEqual({ code: 'RESOURCE_LIMIT' });
     await app.close();
   });
 });
-

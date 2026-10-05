@@ -11,7 +11,10 @@ it('preserves the actionable error code, stage and cause', () => {
 
 it('can query capabilities during SSR without browser globals', () => {
   expect(getCapabilities()).toMatchObject({
-    imageDecoder: false, createImageBitmap: false, htmlImage: false,
-    offscreenCanvas: false, canvasToBlob: false,
+    imageDecoder: false,
+    createImageBitmap: false,
+    htmlImage: false,
+    offscreenCanvas: false,
+    canvasToBlob: false,
   });
 });

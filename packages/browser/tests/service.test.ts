@@ -5,7 +5,7 @@ import { parseExif } from '../src/exif/parser';
 import { fixtureWithOrientation6AndDate } from './fixtures';
 
 it('exposes the approved public service', () => {
-  for (const key of ['load', 'inspect', 'process', 'encode', 'getCapabilities'] as const) {
+  for (const key of ['load', 'inspect', 'process', 'encode', 'probe', 'getCapabilities'] as const) {
     expect(typeof NexusImage[key]).toBe('function');
   }
 });
@@ -15,14 +15,18 @@ it('rejects empty input with a source error', async () => {
 });
 
 it('rejects decoding in Node with a clear capability error', async () => {
-  await expect(NexusImage.load(new Blob(['bytes'], { type: 'image/png' })))
-    .rejects.toMatchObject({ code: 'UNSUPPORTED', stage: 'decode' });
+  await expect(NexusImage.load(new Blob(['bytes'], { type: 'image/png' }))).rejects.toMatchObject({
+    code: 'UNSUPPORTED',
+    stage: 'decode',
+  });
 });
 
 it('falls back to createImageBitmap after a non-abort ImageDecoder failure', async () => {
   class BrokenDecoder {
     constructor(_options: { data: ArrayBuffer; type: string }) {}
-    async decode() { throw new Error('unsupported codec'); }
+    async decode() {
+      throw new Error('unsupported codec');
+    }
     close() {}
   }
   const close = vi.fn();
@@ -30,6 +34,50 @@ it('falls back to createImageBitmap after a non-abort ImageDecoder failure', asy
   vi.stubGlobal('createImageBitmap', async () => ({ width: 3, height: 2, close }));
   const asset = await NexusImage.load(new Blob(['image'], { type: 'image/png' }));
   expect(asset.metadata).toMatchObject({ width: 3, height: 2 });
+  asset.dispose();
+  expect(close).toHaveBeenCalledTimes(1);
+});
+
+it('reads a Blob once on the ImageDecoder load path', async () => {
+  let reads = 0;
+  let decoderBytes: ArrayBuffer | undefined;
+  class CountingBlob extends Blob {
+    override async arrayBuffer(): Promise<ArrayBuffer> {
+      reads += 1;
+      return super.arrayBuffer();
+    }
+  }
+  class FakeDecoder {
+    constructor(options: { data: ArrayBuffer; type: string }) {
+      decoderBytes = options.data;
+      expect(options.type).toBe('image/png');
+    }
+    async decode() {
+      return { image: { displayWidth: 3, displayHeight: 2, close() {} } };
+    }
+    close() {}
+  }
+  vi.stubGlobal('ImageDecoder', FakeDecoder);
+  const asset = await NexusImage.load(new CountingBlob(['image'], { type: 'image/png' }), { decode: 'image-decoder' });
+  expect(reads).toBe(1);
+  expect(decoderBytes?.byteLength).toBeGreaterThan(0);
+  asset.dispose();
+});
+
+it('reads a Blob once on the createImageBitmap load path', async () => {
+  let reads = 0;
+  class CountingBlob extends Blob {
+    override async arrayBuffer(): Promise<ArrayBuffer> {
+      reads += 1;
+      return super.arrayBuffer();
+    }
+  }
+  const close = vi.fn();
+  vi.stubGlobal('createImageBitmap', async () => ({ width: 3, height: 2, close }));
+  const asset = await NexusImage.load(new CountingBlob(['image'], { type: 'image/png' }), {
+    decode: 'create-image-bitmap',
+  });
+  expect(reads).toBe(1);
   asset.dispose();
   expect(close).toHaveBeenCalledTimes(1);
 });
@@ -46,7 +94,7 @@ it('strips JPEG EXIF orientation before browser decoding', async () => {
   asset.dispose();
 });
 
-it('releases a processed surface when encoding is aborted', async () => {
+it('keeps a processed surface available when encoding is aborted', async () => {
   let pendingEncode!: (blob: Blob) => void;
   class FakeImage {
     decoding = '';
@@ -54,11 +102,31 @@ it('releases a processed surface when encoding is aborted', async () => {
     naturalHeight = 1;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(value: string) { if (value) queueMicrotask(() => this.onload?.()); }
+    set src(value: string) {
+      if (value) queueMicrotask(() => this.onload?.());
+    }
   }
-  const context = { save() {}, restore() {}, translate() {}, scale() {}, transform() {}, fillRect() {}, drawImage() {}, fillStyle: '' };
+  const context = {
+    save() {},
+    restore() {},
+    translate() {},
+    scale() {},
+    transform() {},
+    fillRect() {},
+    drawImage() {},
+    fillStyle: '',
+  };
   vi.stubGlobal('Image', FakeImage);
-  vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => context, toBlob: (callback: (blob: Blob | null) => void) => { pendingEncode = (blob) => callback(blob); } }) });
+  vi.stubGlobal('document', {
+    createElement: () => ({
+      width: 0,
+      height: 0,
+      getContext: () => context,
+      toBlob: (callback: (blob: Blob | null) => void) => {
+        pendingEncode = (blob) => callback(blob);
+      },
+    }),
+  });
   const asset = await NexusImage.load(new Blob(['image'], { type: 'image/png' }));
   const processed = await NexusImage.process(asset);
   const controller = new AbortController();
@@ -66,31 +134,46 @@ it('releases a processed surface when encoding is aborted', async () => {
   controller.abort();
   pendingEncode(new Blob(['encoded'], { type: 'image/png' }));
   await expect(pending).rejects.toMatchObject({ code: 'ABORTED', stage: 'encode' });
-  await expect(NexusImage.encode(processed)).rejects.toMatchObject({ code: 'INVALID_SOURCE' });
+  const retry = NexusImage.encode(processed);
+  pendingEncode(new Blob(['retry'], { type: 'image/png' }));
+  const encoded = await retry;
+  expect(encoded.blob.type).toBe('image/png');
+  processed.dispose();
   asset.dispose();
 });
 
 it('preserves cancellation before allocating browser resources', async () => {
   const controller = new AbortController();
   controller.abort();
-  await expect(NexusImage.process(new Blob(['x']), { signal: controller.signal }))
-    .rejects.toMatchObject({ code: 'ABORTED' });
+  await expect(NexusImage.process(new Blob(['x']), { signal: controller.signal })).rejects.toMatchObject({
+    code: 'ABORTED',
+  });
 });
 
 it('loads, processes, and encodes through the HTML image and canvas fallbacks', async () => {
   const drawImage = vi.fn();
   const context = {
-    save: vi.fn(), restore: vi.fn(), translate: vi.fn(), scale: vi.fn(), transform: vi.fn(),
-    fillRect: vi.fn(), drawImage, fillStyle: '',
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    transform: vi.fn(),
+    fillRect: vi.fn(),
+    drawImage,
+    fillStyle: '',
   };
-  const toBlob = vi.fn((callback: (blob: Blob | null) => void, type?: string) => callback(new Blob(['encoded'], { type })));
+  const toBlob = vi.fn((callback: (blob: Blob | null) => void, type?: string) =>
+    callback(new Blob(['encoded'], { type })),
+  );
   class FakeImage {
     decoding = '';
     naturalWidth = 4;
     naturalHeight = 2;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(_value: string) { queueMicrotask(() => this.onload?.()); }
+    set src(_value: string) {
+      queueMicrotask(() => this.onload?.());
+    }
   }
   vi.stubGlobal('Image', FakeImage);
   vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => context, toBlob }) });
@@ -113,12 +196,16 @@ it('releases a temporary asset when canvas creation fails', async () => {
     naturalHeight = 1;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(value: string) { if (value) queueMicrotask(() => this.onload?.()); }
+    set src(value: string) {
+      if (value) queueMicrotask(() => this.onload?.());
+    }
   }
   vi.stubGlobal('Image', FakeImage);
   vi.stubGlobal('document', undefined);
-  await expect(NexusImage.process(new Blob(['image'], { type: 'image/png' })))
-    .rejects.toMatchObject({ code: 'UNSUPPORTED', stage: 'render' });
+  await expect(NexusImage.process(new Blob(['image'], { type: 'image/png' }))).rejects.toMatchObject({
+    code: 'UNSUPPORTED',
+    stage: 'render',
+  });
   expect(revoke).toHaveBeenCalledTimes(1);
   revoke.mockRestore();
 });
@@ -131,20 +218,29 @@ it('releases a temporary asset when resize validation fails', async () => {
     naturalHeight = 1;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(value: string) { if (value) queueMicrotask(() => this.onload?.()); }
+    set src(value: string) {
+      if (value) queueMicrotask(() => this.onload?.());
+    }
   }
   vi.stubGlobal('Image', FakeImage);
   vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => ({}) }) });
-  await expect(NexusImage.process(new Blob(['image'], { type: 'image/png' }), { resize: { width: 0 } }))
-    .rejects.toMatchObject({ code: 'RENDER_FAILED', stage: 'render' });
+  await expect(
+    NexusImage.process(new Blob(['image'], { type: 'image/png' }), { resize: { width: 0 } }),
+  ).rejects.toMatchObject({ code: 'RENDER_FAILED', stage: 'render' });
   expect(revoke).toHaveBeenCalledTimes(1);
   revoke.mockRestore();
 });
 
 it('applies crop, rotation, and flip through the public process API', async () => {
   const context = {
-    save: vi.fn(), restore: vi.fn(), translate: vi.fn(), scale: vi.fn(), transform: vi.fn(),
-    fillRect: vi.fn(), drawImage: vi.fn(), fillStyle: '',
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    transform: vi.fn(),
+    fillRect: vi.fn(),
+    drawImage: vi.fn(),
+    fillStyle: '',
   };
   class FakeImage {
     decoding = '';
@@ -152,7 +248,9 @@ it('applies crop, rotation, and flip through the public process API', async () =
     naturalHeight = 2;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(value: string) { if (value) queueMicrotask(() => this.onload?.()); }
+    set src(value: string) {
+      if (value) queueMicrotask(() => this.onload?.());
+    }
   }
   vi.stubGlobal('Image', FakeImage);
   vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => context }) });
@@ -169,11 +267,19 @@ it('applies crop, rotation, and flip through the public process API', async () =
 });
 
 it('enforces public input, output, and encoded-byte limits', async () => {
-  await expect(NexusImage.load(new Blob(['12345'], { type: 'image/png' }), { limits: { maxInputBytes: 4 } }))
-    .rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'source' });
+  await expect(
+    NexusImage.load(new Blob(['12345'], { type: 'image/png' }), { limits: { maxInputBytes: 4 } }),
+  ).rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'source' });
 
   const context = {
-    save() {}, restore() {}, translate() {}, scale() {}, transform() {}, fillRect() {}, drawImage() {}, fillStyle: '',
+    save() {},
+    restore() {},
+    translate() {},
+    scale() {},
+    transform() {},
+    fillRect() {},
+    drawImage() {},
+    fillStyle: '',
   };
   class FakeImage {
     decoding = '';
@@ -181,13 +287,25 @@ it('enforces public input, output, and encoded-byte limits', async () => {
     naturalHeight = 2;
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    set src(value: string) { if (value) queueMicrotask(() => this.onload?.()); }
+    set src(value: string) {
+      if (value) queueMicrotask(() => this.onload?.());
+    }
   }
   vi.stubGlobal('Image', FakeImage);
-  vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => context, toBlob: (callback: (blob: Blob | null) => void) => callback(new Blob(['12345'], { type: 'image/png' })) }) });
-  await expect(NexusImage.process(new Blob(['image'], { type: 'image/png' }), { limits: { maxOutputWidth: 2 } }))
-    .rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'render' });
+  vi.stubGlobal('document', {
+    createElement: () => ({
+      width: 0,
+      height: 0,
+      getContext: () => context,
+      toBlob: (callback: (blob: Blob | null) => void) => callback(new Blob(['12345'], { type: 'image/png' })),
+    }),
+  });
+  await expect(
+    NexusImage.process(new Blob(['image'], { type: 'image/png' }), { limits: { maxOutputWidth: 2 } }),
+  ).rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'render' });
   const processed = await NexusImage.process(new Blob(['image'], { type: 'image/png' }));
-  await expect(NexusImage.encode(processed, { limits: { maxOutputBytes: 4 } }))
-    .rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'encode' });
+  await expect(NexusImage.encode(processed, { limits: { maxOutputBytes: 4 } })).rejects.toMatchObject({
+    code: 'RESOURCE_LIMIT',
+    stage: 'encode',
+  });
 });

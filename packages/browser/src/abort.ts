@@ -27,11 +27,17 @@ export function awaitWithAbort<T>(
       (value) => {
         signal.removeEventListener('abort', abort);
         if (settled) onLateResult?.(value);
-        else { settled = true; resolve(value); }
+        else {
+          settled = true;
+          resolve(value);
+        }
       },
       (error: unknown) => {
         signal.removeEventListener('abort', abort);
-        if (!settled) { settled = true; reject(error); }
+        if (!settled) {
+          settled = true;
+          reject(error);
+        }
       },
     );
   });

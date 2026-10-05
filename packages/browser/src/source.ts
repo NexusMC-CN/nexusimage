@@ -6,6 +6,8 @@ import type { ImageSource, ResourceLimits } from './types';
 
 export interface NormalizedSource {
   readonly blob: Blob;
+  /** Bytes read while normalizing the source, reused by metadata and decoders. */
+  readonly bytes: ArrayBuffer;
   readonly mimeType: string;
   readonly size: number;
   readonly name?: string;
@@ -27,7 +29,8 @@ export async function readBlobBytes(blob: Blob, signal?: AbortSignal): Promise<A
     throwIfAborted(signal);
     return bytes;
   }
-  if (typeof FileReader === 'undefined') throw new NexusImageError('UNSUPPORTED', 'source', 'Blob reading is unavailable.');
+  if (typeof FileReader === 'undefined')
+    throw new NexusImageError('UNSUPPORTED', 'source', 'Blob reading is unavailable.');
   const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
     const reader = new FileReader();
     const abort = () => reader.abort();
@@ -41,8 +44,9 @@ export async function readBlobBytes(blob: Blob, signal?: AbortSignal): Promise<A
       reject(new NexusImageError('ABORTED', 'source', 'The image read was aborted.', signal.reason));
       return;
     }
-    try { reader.readAsArrayBuffer(blob); }
-    catch (error) {
+    try {
+      reader.readAsArrayBuffer(blob);
+    } catch (error) {
       signal?.removeEventListener('abort', abort);
       reject(error);
     }
@@ -70,7 +74,10 @@ function createTimeoutContext(signal: AbortSignal | undefined, timeoutMs: number
     if (signal.aborted) abortFromCaller();
     else signal.addEventListener('abort', abortFromCaller, { once: true });
   }
-  const timer = setTimeout(() => { timedOut = true; controller.abort(new Error('Image fetch timed out.')); }, timeoutMs);
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort(new Error('Image fetch timed out.'));
+  }, timeoutMs);
   return {
     signal: controller.signal,
     timedOut: () => timedOut,
@@ -82,18 +89,25 @@ function createTimeoutContext(signal: AbortSignal | undefined, timeoutMs: number
 }
 
 function throwFetchError(error: unknown, context: TimeoutContext, signal?: AbortSignal): never {
-  if (context.timedOut()) throw new NexusImageError('RESOURCE_LIMIT', 'source', 'Image fetch exceeded the configured timeout.', error);
+  if (context.timedOut())
+    throw new NexusImageError('RESOURCE_LIMIT', 'source', 'Image fetch exceeded the configured timeout.', error);
   if (signal?.aborted) throw new NexusImageError('ABORTED', 'source', 'The image fetch was aborted.', error);
   throw new NexusImageError('INVALID_SOURCE', 'source', 'Unable to fetch image source.', error);
 }
 
-export async function normalizeSource(source: ImageSource, signal?: AbortSignal, requestedLimits?: ResourceLimits): Promise<NormalizedSource> {
+export async function normalizeSource(
+  source: ImageSource,
+  signal?: AbortSignal,
+  requestedLimits?: ResourceLimits,
+): Promise<NormalizedSource> {
   throwIfAborted(signal);
   const limits: ResolvedResourceLimits = resolveResourceLimits(requestedLimits);
   let blob: Blob;
   let name: string | undefined;
-  if (isFileLike(source)) { blob = source; name = source.name; }
-  else if (isBlobLike(source)) blob = source;
+  if (isFileLike(source)) {
+    blob = source;
+    name = source.name;
+  } else if (isBlobLike(source)) blob = source;
   else if (source instanceof ArrayBuffer) blob = new Blob([source]);
   else if (source instanceof Uint8Array) blob = new Blob([source as unknown as BlobPart]);
   else if (typeof source === 'string' || source instanceof URL) {
@@ -101,7 +115,8 @@ export async function normalizeSource(source: ImageSource, signal?: AbortSignal,
     let response: Response;
     try {
       response = await fetch(String(source), timeout.signal ? { signal: timeout.signal } : {});
-      if (!response.ok) throw new NexusImageError('INVALID_SOURCE', 'source', `Unable to fetch image source (${response.status}).`);
+      if (!response.ok)
+        throw new NexusImageError('INVALID_SOURCE', 'source', `Unable to fetch image source (${response.status}).`);
       blob = await awaitWithAbort(response.blob(), timeout.signal, undefined, undefined, 'source');
     } catch (error) {
       if (error instanceof NexusImageError && !timeout.timedOut()) throw error;
@@ -115,9 +130,10 @@ export async function normalizeSource(source: ImageSource, signal?: AbortSignal,
   assertInputBytes(blob.size, limits);
   const bytes = await readBlobBytes(blob, signal);
   const detected = detectImageFormat(new Uint8Array(bytes), blob.type);
-  const mimeType = detected.format === 'unknown' ? (blob.type || detected.mimeType) : detected.mimeType;
+  const mimeType = detected.format === 'unknown' ? blob.type || detected.mimeType : detected.mimeType;
   return {
     blob,
+    bytes,
     mimeType,
     size: blob.size,
     format: detected,
@@ -127,8 +143,17 @@ export async function normalizeSource(source: ImageSource, signal?: AbortSignal,
 }
 
 export function createObjectUrl(source: Blob): { url: string; dispose(): void } {
-  if (typeof URL.createObjectURL !== 'function') throw new NexusImageError('UNSUPPORTED', 'source', 'URL.createObjectURL is unavailable.');
+  if (typeof URL.createObjectURL !== 'function')
+    throw new NexusImageError('UNSUPPORTED', 'source', 'URL.createObjectURL is unavailable.');
   const url = URL.createObjectURL(source);
   let disposed = false;
-  return { url, dispose() { if (!disposed) { disposed = true; URL.revokeObjectURL(url); } } };
+  return {
+    url,
+    dispose() {
+      if (!disposed) {
+        disposed = true;
+        URL.revokeObjectURL(url);
+      }
+    },
+  };
 }

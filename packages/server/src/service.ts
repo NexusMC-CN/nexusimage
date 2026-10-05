@@ -1,10 +1,5 @@
 import { SharpImageEngine } from './engine.js';
-import type {
-  EncodeOptions,
-  ImageCapabilities,
-  LoadOptions,
-  ProcessOptions,
-} from 'nexusimage/contracts';
+import type { EncodeOptions, ImageCapabilities, LoadOptions, ProcessOptions } from 'nexusimage/contracts';
 import type {
   NodeEncodedImage,
   NodeImageAsset,

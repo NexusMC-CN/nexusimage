@@ -3,7 +3,15 @@ import { awaitWithAbort } from '../abort';
 import type { NormalizedSource } from '../source';
 import type { DecodeAdapter, DecodedImage, DrawTarget } from './adapter';
 
-interface DecoderResult { image: { displayWidth?: number; displayHeight?: number; codedWidth?: number; codedHeight?: number; close?: () => void } }
+interface DecoderResult {
+  image: {
+    displayWidth?: number;
+    displayHeight?: number;
+    codedWidth?: number;
+    codedHeight?: number;
+    close?: () => void;
+  };
+}
 interface DecoderInstance {
   decode(options?: { frameIndex?: number }): Promise<DecoderResult>;
   close(): void;
@@ -20,7 +28,7 @@ export function imageDecoderAdapter(ctor?: DecoderConstructor): DecodeAdapter {
       let decoder: DecoderInstance | undefined;
       let image: DecoderResult['image'] | undefined;
       try {
-        const bytes = await awaitWithAbort(source.blob.arrayBuffer(), signal, undefined, undefined, 'decode');
+        const bytes = source.bytes;
         throwIfAborted(signal, 'decode');
         decoder = new Decoder({ data: bytes, type: source.mimeType });
         const result = await awaitWithAbort(
@@ -39,8 +47,12 @@ export function imageDecoderAdapter(ctor?: DecoderConstructor): DecodeAdapter {
         decoder = undefined;
         let disposed = false;
         return {
-          name: 'image-decoder', width, height,
-          draw(target: DrawTarget, dx, dy, dw, dh) { target.drawImage(image, dx, dy, dw, dh); },
+          name: 'image-decoder',
+          width,
+          height,
+          draw(target: DrawTarget, dx, dy, dw, dh) {
+            target.drawImage(image, dx, dy, dw, dh);
+          },
           dispose() {
             if (disposed) return;
             disposed = true;

@@ -11,7 +11,9 @@ async function createPng(width = 4, height = 2): Promise<Buffer> {
       channels: 4,
       background: { r: 40, g: 120, b: 220, alpha: 1 },
     },
-  }).png().toBuffer();
+  })
+    .png()
+    .toBuffer();
 }
 
 async function createOrientedJpeg(): Promise<Buffer> {
@@ -22,7 +24,10 @@ async function createOrientedJpeg(): Promise<Buffer> {
       channels: 3,
       background: { r: 240, g: 30, b: 30 },
     },
-  }).jpeg().withMetadata({ orientation: 6 }).toBuffer();
+  })
+    .jpeg()
+    .withMetadata({ orientation: 6 })
+    .toBuffer();
 }
 
 describe('SharpImageEngine', () => {
@@ -118,6 +123,22 @@ describe('SharpImageEngine', () => {
     processed.dispose();
   });
 
+  it('keeps a processed image usable when one encode attempt fails', async () => {
+    const engine = new SharpImageEngine();
+    const processed = await engine.process(await createPng());
+
+    await expect(engine.encode(processed, { type: 'image/bmp' })).rejects.toMatchObject({
+      code: 'ENCODE_FAILED',
+      stage: 'encode',
+    });
+
+    const encoded = await engine.encode(processed, { type: 'image/png' });
+
+    expect(encoded.type).toBe('image/png');
+    expect(encoded.buffer.byteLength).toBeGreaterThan(0);
+    processed.dispose();
+  });
+
   it('enforces input and output resource limits at the engine boundary', async () => {
     const engine = new SharpImageEngine();
     const input = await createPng(20, 10);
@@ -130,7 +151,9 @@ describe('SharpImageEngine', () => {
       code: 'RESOURCE_LIMIT',
       stage: 'decode',
     });
-    await expect(engine.process(input, { resize: { width: 20, height: 10 }, limits: { maxOutputPixels: 100 } })).rejects.toMatchObject({
+    await expect(
+      engine.process(input, { resize: { width: 20, height: 10 }, limits: { maxOutputPixels: 100 } }),
+    ).rejects.toMatchObject({
       code: 'RESOURCE_LIMIT',
       stage: 'render',
     });
