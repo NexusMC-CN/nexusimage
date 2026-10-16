@@ -5,13 +5,15 @@ NexusImage 是一个浏览器优先的 TypeScript 图片加载与优化封装，
 ## 安装
 
 ```bash
-npm install nexusimage
+npm install @nexusmc-cn/nexusimage
 ```
+
+原 `nexusimage` 包的使用者可以将依赖与导入路径更新为 `@nexusmc-cn/nexusimage`；共享契约入口为 `@nexusmc-cn/nexusimage/contracts`，公共 API 保持不变。
 
 ## 基本用法
 
 ```ts
-import { NexusImage } from 'nexusimage';
+import { NexusImage } from '@nexusmc-cn/nexusimage';
 
 const asset = await NexusImage.load(file, { orientation: 'normalize' });
 const processed = await NexusImage.process(asset, {
@@ -58,7 +60,7 @@ const asset = await NexusImage.load(file, {
 需要判断 GIF、动画 WebP 或动画 AVIF 时，可以使用独立的 `inspectAnimation()`。它只读取 `ImageDecoder` 的 track 元数据，不会改变 `NexusImage.load()` 默认处理首帧的行为：
 
 ```ts
-import { inspectAnimation } from 'nexusimage';
+import { inspectAnimation } from '@nexusmc-cn/nexusimage';
 
 const animation = await inspectAnimation(file);
 console.log(animation.animated, animation.frameCount, animation.duration);

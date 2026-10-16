@@ -7,5 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   splitting: false,
-  external: ['sharp', 'nexusimage', '@fastify/multipart', 'fastify-plugin', 'fastify'],
+  external: ['sharp', '@nexusmc-cn/nexusimage', '@fastify/multipart', 'fastify-plugin', 'fastify'],
 });

@@ -6,7 +6,7 @@ import type {
   ImageMetadata,
   LoadOptions,
   ProcessOptions,
-} from 'nexusimage/contracts';
+} from '@nexusmc-cn/nexusimage/contracts';
 import {
   createNexusImageService,
   NexusImageService,

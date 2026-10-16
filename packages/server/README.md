@@ -1,4 +1,4 @@
-# @nexusimage/node
+# @nexusmc-cn/nexusimage-node
 
 NexusImage 的 Node.js 运行时适配包。它使用 `sharp` 完成图片解码、EXIF
 元数据读取、图像变换和编码，同时让浏览器包保持轻量并且不依赖 Node.js。
@@ -6,10 +6,10 @@ NexusImage 的 Node.js 运行时适配包。它使用 `sharp` 完成图片解码
 ## 安装
 
 ```sh
-npm install @nexusimage/node nexusimage
+npm install @nexusmc-cn/nexusimage-node @nexusmc-cn/nexusimage
 ```
 
-本包要求 Node.js 20 或更高版本。`nexusimage` 是共享契约的 peer dependency，
+本包要求 Node.js 20 或更高版本。`@nexusmc-cn/nexusimage` 是共享契约的 peer dependency，
 `sharp` 是默认的原生图片处理引擎。
 
 ## 与框架无关的服务
@@ -17,7 +17,7 @@ npm install @nexusimage/node nexusimage
 Node 端的主要 API 是进程内服务，不要求使用 Fastify 或其他 HTTP 服务器：
 
 ```ts
-import { createNexusImageService } from '@nexusimage/node';
+import { createNexusImageService } from '@nexusmc-cn/nexusimage-node';
 
 const service = createNexusImageService({
   engineOptions: { limits: { maxInputBytes: 32 * 1024 * 1024 } },
@@ -43,7 +43,7 @@ processed.dispose();
 ## 图片引擎
 
 ```ts
-import { createSharpImageEngine } from '@nexusimage/node';
+import { createSharpImageEngine } from '@nexusmc-cn/nexusimage-node';
 
 const engine = createSharpImageEngine({
   limits: { maxInputBytes: 32 * 1024 * 1024 },
@@ -78,7 +78,7 @@ processed.dispose();
 
 ```ts
 import Fastify from 'fastify';
-import nexusImageFastify from '@nexusimage/node/fastify';
+import nexusImageFastify from '@nexusmc-cn/nexusimage-node/fastify';
 
 const app = Fastify();
 await app.register(nexusImageFastify, {
@@ -89,7 +89,7 @@ await app.register(nexusImageFastify, {
 ```
 
 使用此入口时需要安装 Fastify。multipart 解析器和插件运行时依赖已包含在
-`@nexusimage/node` 中：
+`@nexusmc-cn/nexusimage-node` 中：
 
 ```sh
 npm install fastify

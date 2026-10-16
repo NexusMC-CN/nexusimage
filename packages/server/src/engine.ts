@@ -17,7 +17,7 @@ import {
   type LoadOptions,
   type ProcessOptions,
   type ResourceLimits,
-} from 'nexusimage/contracts';
+} from '@nexusmc-cn/nexusimage/contracts';
 import type {
   NodeEncodedImage,
   NodeImageAsset,

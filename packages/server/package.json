@@ -1,5 +1,5 @@
 {
-  "name": "@nexusimage/node",
+  "name": "@nexusmc-cn/nexusimage-node",
   "version": "0.1.0",
   "description": "Node.js Sharp adapter for NexusImage image processing.",
   "type": "module",
@@ -36,7 +36,13 @@
   ],
   "sideEffects": false,
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NexusMC-CN/nexusimage.git",
+    "directory": "packages/server"
   },
   "engines": {
     "node": ">=20"
@@ -60,12 +66,12 @@
   },
   "peerDependencies": {
     "fastify": ">=5.0.0 <6.0.0",
-    "nexusimage": "^0.2.0"
+    "@nexusmc-cn/nexusimage": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
     "fastify": "^5.12.5",
-    "nexusimage": "file:../browser",
+    "@nexusmc-cn/nexusimage": "file:../browser",
     "prettier": "^3.9.9",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",

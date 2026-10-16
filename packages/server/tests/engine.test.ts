@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { NexusImageError } from 'nexusimage/contracts';
+import { NexusImageError } from '@nexusmc-cn/nexusimage/contracts';
 import { SharpImageEngine } from '../src/index.js';
 
 async function createPng(width = 4, height = 2): Promise<Buffer> {

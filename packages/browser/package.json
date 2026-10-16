@@ -1,5 +1,5 @@
 {
-  "name": "nexusimage",
+  "name": "@nexusmc-cn/nexusimage",
   "version": "0.2.0",
   "description": "NexusImage: browser-native image loading, EXIF, canvas processing and optimization.",
   "type": "module",
@@ -35,6 +35,15 @@
     "CHANGELOG.md"
   ],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NexusMC-CN/nexusimage.git",
+    "directory": "packages/browser"
+  },
   "engines": {
     "node": ">=20"
   },

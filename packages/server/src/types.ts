@@ -6,7 +6,7 @@ import type {
   ImageSource,
   LoadOptions,
   ProcessOptions,
-} from 'nexusimage/contracts';
+} from '@nexusmc-cn/nexusimage/contracts';
 
 /** Sources accepted by the Node adapter. Remote URLs and filesystem paths stay in the host API. */
 export type NodeImageSource = Exclude<ImageSource, string | URL>;
@@ -30,7 +30,7 @@ export interface NodeEncodedImage extends EncodedImageBase {
 }
 
 export interface SharpImageEngineOptions {
-  readonly limits?: import('nexusimage/contracts').ResourceLimits;
+  readonly limits?: import('@nexusmc-cn/nexusimage/contracts').ResourceLimits;
 }
 
 export interface SharpImageEngineApi {

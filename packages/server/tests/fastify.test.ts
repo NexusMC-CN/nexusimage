@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
-import type { ImageMetadata, ProcessOptions } from 'nexusimage/contracts';
-import { NexusImageError } from 'nexusimage/contracts';
+import type { ImageMetadata, ProcessOptions } from '@nexusmc-cn/nexusimage/contracts';
+import { NexusImageError } from '@nexusmc-cn/nexusimage/contracts';
 import { nexusImageFastify, type NexusImageHttpEngine } from '../src/fastify.js';
 import { createNexusImageService } from '../src/index.js';
 import type { NodeProcessedImage } from '../src/types.js';

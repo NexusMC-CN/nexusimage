@@ -9,7 +9,7 @@ import {
   type LoadOptions,
   type ProcessOptions,
   type ResourceLimits,
-} from 'nexusimage/contracts';
+} from '@nexusmc-cn/nexusimage/contracts';
 import { createNexusImageService } from './service.js';
 import type {
   NodeEncodedImage,

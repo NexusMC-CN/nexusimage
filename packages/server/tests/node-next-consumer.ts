@@ -1,4 +1,4 @@
-import type { ImageMetadata, ProcessOptions } from 'nexusimage/contracts';
+import type { ImageMetadata, ProcessOptions } from '@nexusmc-cn/nexusimage/contracts';
 
 const metadata: ImageMetadata = {} as ImageMetadata;
 const options: ProcessOptions = { resize: { width: 1 } };

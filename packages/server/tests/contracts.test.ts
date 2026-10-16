@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { EncodedImageBase, ImageMetadata } from 'nexusimage/contracts';
+import type { EncodedImageBase, ImageMetadata } from '@nexusmc-cn/nexusimage/contracts';
 import type { NodeEncodedImage } from '../src/types.js';
 
 const metadata: ImageMetadata = {
