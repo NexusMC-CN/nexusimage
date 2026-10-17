@@ -83,7 +83,7 @@ npm run pack:check
 npm run test:browser:playwright
 ```
 
-`test:browser:playwright` 会在 Chromium、Firefox 和 WebKit 中运行基础加载、缩放和编码流程。CI 使用 Node.js 20/22 运行单元测试，并在三个浏览器中执行兼容性测试。发布 `v*.*.*` 标签时，GitHub Actions 会在 `NPM_TOKEN` secret 可用的前提下执行 provenance npm 发布。
+`test:browser:playwright` 会在 Chromium、Firefox 和 WebKit 中运行基础加载、缩放和编码流程。CI 使用 Node.js 22/24 运行单元测试，并在三个浏览器中执行兼容性测试。发布 `v*.*.*` 标签时，GitHub Actions 会在 `NPM_TOKEN` secret 可用的前提下执行 provenance npm 发布。
 
 ## 许可
 

@@ -4,5 +4,5 @@ coverage/
 test-results/
 playwright-report/
 *.tgz
-docs/superpowers/
+**/docs/superpowers/
 .superpowers/

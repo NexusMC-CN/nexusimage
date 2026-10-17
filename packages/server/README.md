@@ -64,13 +64,26 @@ processed.dispose();
 ```
 
 支持的输入类型包括 `Buffer`、`Uint8Array`、`ArrayBuffer` 和 `Blob`/`File`。
+引擎会复制传入的 `Buffer`、`Uint8Array` 和 `ArrayBuffer`，保留独立的输入快照；
+调用开始后，调用方可以复用原缓冲区，已加载资产的内容和尺寸不会随之改变。
 远程 URL 与文件系统路径由宿主应用负责处理，以便宿主统一执行认证、SSRF
 防护和存储限制。
 
 `inspect()` 会返回图片格式、尺寸、动画状态和已解析的 EXIF 元数据。普通的
-`process()` 流程只处理动画图片的首帧；存储、队列、缓存和请求策略仍属于平台职责。
+`process()` 流程只处理动画图片的首帧；元数据读取也只选择首帧，并通过帧数识别
+动画，输入尺寸和像素限制按该帧计算。存储、队列、缓存和请求策略仍属于平台职责。
 编码失败不会销毁传入的 processed image；调用方可以换用其他输出格式重试，
 并在最终完成后调用 `dispose()`。
+
+### EXIF 方向与导出
+
+`inspect()` 保留源图片方向。`process()` 默认按 Sharp 识别的 EXIF 方向归一化，
+包括带方向信息的 JPEG、WebP、PNG 和 TIFF；可以设置 `orientation: 'preserve'`
+保留原像素方向，此选项不表示保留文件中的 EXIF。
+
+导出的图片默认移除 EXIF（包括 GPS）等原始元数据。返回对象中 `metadata.exif`
+保留的是源图片已解析的信息，不表示这些字段已写入结果文件；目前共享 EXIF
+字段解析器读取 JPEG，其他格式的方向使用 Sharp 返回的元数据。
 
 ## Fastify 适配器
 
