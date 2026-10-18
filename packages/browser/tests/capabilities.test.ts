@@ -36,3 +36,25 @@ describe('capability detection', () => {
     expect(toBlob).toHaveBeenCalled();
   });
 });
+
+it('keeps worker probes usable and treats failed encoders without a DOM as unconfirmed', async () => {
+  vi.stubGlobal('document', undefined);
+  vi.stubGlobal('HTMLCanvasElement', undefined);
+  const getContext = vi.fn(() => ({}));
+  const convertToBlob = vi.fn(async (options?: { type?: string }) => new Blob(['x'], { type: options?.type }));
+  class WorkerCanvas {
+    getContext = getContext;
+    convertToBlob = convertToBlob;
+  }
+  WorkerCanvas.prototype.convertToBlob = convertToBlob;
+  vi.stubGlobal('OffscreenCanvas', WorkerCanvas);
+
+  expect((await probeCapabilities({ cache: false })).encodeFormats).toEqual(['png', 'jpeg', 'webp']);
+  expect(getContext).toHaveBeenCalledWith('2d');
+  convertToBlob.mockRejectedValue(new Error('encoding failed'));
+  expect((await probeCapabilities({ cache: false })).encodeFormats).toEqual([]);
+  getContext.mockReturnValue(null as unknown as object);
+  convertToBlob.mockClear();
+  expect((await probeCapabilities({ cache: false })).encodeFormats).toEqual([]);
+  expect(convertToBlob).not.toHaveBeenCalled();
+});
