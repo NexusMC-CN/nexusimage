@@ -10,13 +10,18 @@ permissions:
 
 jobs:
   unit:
-    name: Node ${{ matrix.node }}
-    runs-on: ubuntu-latest
+    name: Node ${{ matrix.node }} (${{ matrix.os }}, autocrlf=${{ matrix.autocrlf }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        include:
+          - { os: ubuntu-latest, node: 22, autocrlf: 'false' }
+          - { os: ubuntu-latest, node: 24, autocrlf: 'input' }
+          - { os: windows-latest, node: 24, autocrlf: 'true' }
     steps:
+      # Set this before checkout so Windows exercises the reported Git setup.
+      - run: git config --global core.autocrlf ${{ matrix.autocrlf }}
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -25,10 +30,12 @@ jobs:
           cache-dependency-path: |
             packages/browser/package-lock.json
             packages/server/package-lock.json
+      - run: node scripts/check-line-endings.mjs
       - run: npm ci --prefix packages/browser
-      - run: npm run test:ci --prefix packages/browser
+      # Run the actual publish guard (which invokes test:ci), without publishing.
+      - run: npm run prepublishOnly --prefix packages/browser
       - run: npm ci --prefix packages/server
-      - run: npm run test:ci --prefix packages/server
+      - run: npm run prepublishOnly --prefix packages/server
 
   browser:
     name: Browser compatibility
