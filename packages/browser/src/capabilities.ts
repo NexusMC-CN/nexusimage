@@ -17,6 +17,7 @@ type BrowserGlobal = typeof globalThis & {
 };
 
 interface ProbeCanvas {
+  getContext?: (contextId: '2d') => unknown;
   toBlob?: (callback: (blob: Blob | null) => void, type?: string, quality?: number) => void;
   convertToBlob?: (options?: { type?: string; quality?: number }) => Promise<Blob>;
 }
@@ -66,13 +67,16 @@ export function getCapabilities(): ImageCapabilities {
   };
 }
 
-function resolveProbeCanvas(globals: BrowserGlobal): ProbeCanvas | undefined {
+function resolveProbeCanvas(globals: BrowserGlobal, offscreen = true): ProbeCanvas | undefined {
   if (
+    offscreen &&
     typeof globals.OffscreenCanvas === 'function' &&
     typeof globals.OffscreenCanvas.prototype?.convertToBlob === 'function'
   ) {
     try {
-      return new globals.OffscreenCanvas(1, 1);
+      const canvas = new globals.OffscreenCanvas(1, 1);
+      // convertToBlob requires a rendering context, not just a bitmap.
+      if (canvas.getContext?.('2d')) return canvas;
     } catch {
       /* fall through to HTML canvas */
     }
@@ -91,31 +95,32 @@ function resolveProbeCanvas(globals: BrowserGlobal): ProbeCanvas | undefined {
   return undefined;
 }
 
-async function probeCanvasMimeType(canvas: ProbeCanvas, type: string, timeoutMs: number): Promise<boolean> {
+// null means the encoder could not be tested; false means it returned another MIME type.
+async function probeCanvasMimeType(canvas: ProbeCanvas, type: string, timeoutMs: number): Promise<boolean | null> {
   const expected = formatMimeType(formatFromMimeType(type));
   if (typeof canvas.convertToBlob === 'function') {
     try {
       const blob = await canvas.convertToBlob({ type });
       return blob.type.trim().toLowerCase() === expected;
     } catch {
-      return false;
+      return null;
     }
   }
   const toBlob = canvas.toBlob;
-  if (typeof toBlob !== 'function') return false;
-  return new Promise<boolean>((resolve) => {
+  if (typeof toBlob !== 'function') return null;
+  return new Promise<boolean | null>((resolve) => {
     let settled = false;
-    const finish = (value: boolean) => {
+    const finish = (value: boolean | null) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       resolve(value);
     };
-    const timer = setTimeout(() => finish(false), timeoutMs);
+    const timer = setTimeout(() => finish(null), timeoutMs);
     try {
-      toBlob.call(canvas, (blob) => finish(Boolean(blob && blob.type.trim().toLowerCase() === expected)), type);
+      toBlob.call(canvas, (blob) => finish(blob ? blob.type.trim().toLowerCase() === expected : null), type);
     } catch {
-      finish(false);
+      finish(null);
     }
   });
 }
@@ -154,10 +159,21 @@ export async function probeCapabilities(options: CapabilityProbeOptions = {}): P
   const task = (async () => {
     const decodeFormats = await probeDecodeFormats(globals);
     const canvas = resolveProbeCanvas(globals);
+    let fallbackCanvas: ProbeCanvas | undefined;
+    let fallbackResolved = false;
     const encodeFormats: ImageFormat[] = [];
     if (canvas) {
       for (const format of ENCODE_PROBE_FORMATS) {
-        if (await probeCanvasMimeType(canvas, formatMimeType(format), timeoutMs)) encodeFormats.push(format);
+        const type = formatMimeType(format);
+        let supported = await probeCanvasMimeType(canvas, type, timeoutMs);
+        if (supported === null && typeof canvas.convertToBlob === 'function') {
+          if (!fallbackResolved) {
+            fallbackCanvas = resolveProbeCanvas(globals, false);
+            fallbackResolved = true;
+          }
+          if (fallbackCanvas) supported = await probeCanvasMimeType(fallbackCanvas, type, timeoutMs);
+        }
+        if (supported) encodeFormats.push(format);
       }
     }
     return {
