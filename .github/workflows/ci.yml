@@ -30,6 +30,43 @@ jobs:
       - run: npm ci --prefix packages/server
       - run: npm run test:ci --prefix packages/server
 
+  animation:
+    name: FFmpeg 9 animation integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            packages/browser/package-lock.json
+            packages/server/package-lock.json
+      - name: Install pinned FFmpeg and FFprobe
+        run: |
+          release=autobuild-2026-09-30-13-08
+          package=ffmpeg-n9.0.2-17-g2a571b6068-linux64-gpl-9.0.tar.xz
+          archive="$RUNNER_TEMP/$package"
+          curl --fail --location --retry 3 \
+            "https://github.com/BtbN/FFmpeg-Builds/releases/download/$release/$package" \
+            --output "$archive"
+          printf '%s  %s\n' '68ee646831adaae2495618346f3bba94ff207ff83bbd34d643e7004730d66269' "$archive" |
+            sha256sum --check
+          mkdir -p "$RUNNER_TEMP/ffmpeg"
+          tar -xJf "$archive" --strip-components=1 -C "$RUNNER_TEMP/ffmpeg"
+          test -x "$RUNNER_TEMP/ffmpeg/bin/ffmpeg"
+          test -x "$RUNNER_TEMP/ffmpeg/bin/ffprobe"
+          echo "NEXUSIMAGE_TEST_FFMPEG=$RUNNER_TEMP/ffmpeg/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "NEXUSIMAGE_TEST_FFPROBE=$RUNNER_TEMP/ffmpeg/bin/ffprobe" >> "$GITHUB_ENV"
+      - run: npm ci --prefix packages/browser
+      - run: npm run build --prefix packages/browser
+      - run: npm ci --prefix packages/server
+      - name: Run required animation integration tests
+        run: npx vitest run tests/animation/live.test.ts
+        working-directory: packages/server
+        env:
+          NEXUSIMAGE_FFMPEG_TEST_REQUIRED: '1'
+
   browser:
     name: Browser compatibility
     runs-on: ubuntu-latest

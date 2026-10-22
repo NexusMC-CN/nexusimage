@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add the optional `/ffmpeg` animation engine and explicit service `transcodeAnimation()` API for animated GIF, WebP and AVIF.
+- Enforce input and output animation budgets, cancellation and output frame, timing and dimension checks; preserve existing first-frame processing.
+- Reject AVIF output when decoded frames contain transparency and report unavailable runtime binary or codec capabilities.
+
 ## 0.1.1
 
 - Normalize EXIF orientation reported by Sharp for non-JPEG inputs.

@@ -85,6 +85,84 @@ processed.dispose();
 保留的是源图片已解析的信息，不表示这些字段已写入结果文件；目前共享 EXIF
 字段解析器读取 JPEG，其他格式的方向使用 Sharp 返回的元数据。
 
+## 可选的动画转码
+
+需要显式处理所有帧时，从独立入口加载 FFmpeg 后端并注入服务：
+
+```ts
+import { createNexusImageService } from '@nexusmc-cn/nexusimage-node';
+import { createFfmpegAnimationEngine } from '@nexusmc-cn/nexusimage-node/ffmpeg';
+
+const animationEngine = createFfmpegAnimationEngine({
+  ffmpegPath: 'ffmpeg',
+  ffprobePath: 'ffprobe',
+  limits: { maxFrames: 60, maxProcessingMs: 30_000 },
+});
+const service = createNexusImageService({ animationEngine });
+const abortController = new AbortController();
+const result = await service.transcodeAnimation(inputBuffer, {
+  type: 'image/webp',
+  resize: { width: 320, height: 240, fit: 'contain' },
+  background: '#FFFFFF',
+  quality: 0.8,
+  limits: { maxDurationMs: 10_000 },
+  signal: abortController.signal,
+});
+// result.buffer 是 Buffer；type 是输出 MIME 类型。
+// width、height、frameCount、durationMs 来自实际输出的探测结果。
+```
+
+不需要取消时可以省略 `signal`。
+`ffmpegPath`、`ffprobePath` 和 `limits` 均可省略，命令名默认分别为 `ffmpeg` 和
+`ffprobe`。宿主需要自行安装这些二进制程序；可用的解码器、编码器和格式支持取决于
+运行时二进制的构建配置，安装 npm 包不代表具备所有转码能力。
+
+`transcodeAnimation(input, options)` 接受与普通图片引擎相同的内存输入类型，要求输入为
+至少两帧的 GIF、WebP 或 AVIF。`type` 必填，支持 `image/gif`、`image/webp` 和
+`image/avif`。可选变换依次为 `crop`、`rotate`、`flip`、`resize`；`crop` 使用源图内的
+整数像素矩形，`rotate` 必须为 90 度的整数倍。`resize` 使用正整数尺寸并支持
+`contain`、`cover`、`fill`；`background` 仅接受严格的 `#RRGGBB` 颜色，用于
+`contain` 的补边。`quality` 范围为 0 到 1，仅适用于 WebP 和 AVIF；GIF 不支持此选项。
+实际包含透明像素的动画转为 AVIF 明确不受支持，设置 `background` 也不会解除此限制。
+输出统一设为无限循环；输入原有的有限循环次数不会保留。`durationMs` 只表示一次播放周期。
+AVIF 输入需要能唯一识别一条动画序列轨；含多条动画轨（例如某些辅助 alpha 轨）的文件
+会以 `UNSUPPORTED` / `capability` 拒绝，无法识别序列轨的多轨文件会以
+`DECODE_FAILED` / `decode` 拒绝。
+
+此 API 不改变现有 `process()` / `encode()` 的首帧处理行为。服务未配置
+`animationEngine` 时，调用会返回 `UNSUPPORTED` / `capability` 错误。
+
+### 动画资源限制与错误
+
+动画默认沿用输入与输出各 64 MiB、单帧输入与输出各 100,000,000 像素、宽高各
+16,384 像素的限制，并增加以下预算：
+
+| 限制              | 默认值                                                  |
+| ----------------- | ------------------------------------------------------- |
+| `maxFrames`       | 120 帧                                                  |
+| `maxDurationMs`   | 30,000 毫秒（一个播放周期）                             |
+| `maxTotalPixels`  | 200,000,000（宽 × 高 × 帧数）                           |
+| `maxProcessingMs` | 60,000 毫秒（输入与透明度探测、转码和输出探测共用期限） |
+
+在引擎工厂中设置宿主 `limits`；单次调用的 `limits` 只能进一步降低宿主上限。
+输入、缩放中间帧与实际输出都会检查帧数、时长、尺寸和总像素；超限会拒绝整个操作，不返回截断的
+动画，也不会退回首帧处理或其他格式。结果中的 `frameCount` 和 `durationMs` 表示
+一个播放周期，输出帧数和时长也会与输入核对。
+
+错误使用共享的 `NexusImageError`，宿主可读取 `code` 和 `stage`：
+
+| 情况                                         | `code`           | `stage`                                     |
+| -------------------------------------------- | ---------------- | ------------------------------------------- |
+| 无效输入、非动画或无效限制                   | `INVALID_SOURCE` | `source`                                    |
+| 输入字节超限                                 | `RESOURCE_LIMIT` | `source`                                    |
+| 输入暂存、探测或解码失败                     | `DECODE_FAILED`  | `decode`                                    |
+| 无效裁剪、旋转、翻转、缩放或颜色             | `RENDER_FAILED`  | `render`                                    |
+| 无效输出类型、质量、输出读取、清理或校验失败 | `ENCODE_FAILED`  | `encode`                                    |
+| 帧数、时长、像素或处理时间超限               | `RESOURCE_LIMIT` | 检查发生时的 `decode` / `encode`            |
+| 输出字节超限                                 | `RESOURCE_LIMIT` | `encode`                                    |
+| 缺少二进制、所需编解码能力或 AVIF alpha 支持 | `UNSUPPORTED`    | `capability`                                |
+| 取消操作                                     | `ABORTED`        | 取消发生时的 `source` / `decode` / `encode` |
+
 ## Fastify 适配器
 
 可选的 Fastify 适配器通过独立入口导出：

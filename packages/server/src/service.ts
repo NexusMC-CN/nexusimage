@@ -1,6 +1,16 @@
 import { SharpImageEngine } from './engine.js';
-import type { EncodeOptions, ImageCapabilities, LoadOptions, ProcessOptions } from '@nexusmc-cn/nexusimage/contracts';
+import {
+  NexusImageError,
+  throwIfAborted,
+  type EncodeOptions,
+  type ImageCapabilities,
+  type LoadOptions,
+  type ProcessOptions,
+} from '@nexusmc-cn/nexusimage/contracts';
 import type {
+  AnimationTranscodeOptions,
+  NodeAnimatedImage,
+  NodeAnimationEngineApi,
   NodeEncodedImage,
   NodeImageAsset,
   NodeImageSource,
@@ -17,9 +27,11 @@ import type {
  */
 export class NexusImageService implements NexusImageServiceApi {
   private readonly engine: NexusImageServiceApi;
+  private readonly animationEngine?: NodeAnimationEngineApi;
 
   constructor(options: NexusImageServiceOptions = {}) {
     this.engine = options.engine ?? new SharpImageEngine(options.engineOptions);
+    this.animationEngine = options.animationEngine;
   }
 
   load(source: NodeImageSource, options?: LoadOptions): Promise<NodeImageAsset> {
@@ -36,6 +48,16 @@ export class NexusImageService implements NexusImageServiceApi {
 
   encode(image: NodeProcessedImage, options?: EncodeOptions): Promise<NodeEncodedImage> {
     return this.engine.encode(image, options);
+  }
+
+  async transcodeAnimation(source: NodeImageSource, options: AnimationTranscodeOptions): Promise<NodeAnimatedImage> {
+    if (!options || typeof options !== 'object')
+      throw new NexusImageError('ENCODE_FAILED', 'encode', 'Animation options are required.');
+    throwIfAborted(options.signal, 'source');
+    if (!this.animationEngine) {
+      throw new NexusImageError('UNSUPPORTED', 'capability', 'No animation engine is configured.');
+    }
+    return this.animationEngine.transcodeAnimation(source, options);
   }
 
   getCapabilities(): ImageCapabilities {

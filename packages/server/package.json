@@ -13,8 +13,18 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/cjs/index.d.ts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./ffmpeg": {
+      "import": {
+        "types": "./dist/ffmpeg.d.ts",
+        "default": "./dist/ffmpeg.js"
+      },
+      "require": {
+        "types": "./dist/cjs/ffmpeg.d.ts",
+        "default": "./dist/ffmpeg.cjs"
       }
     },
     "./fastify": {
@@ -23,7 +33,7 @@
         "default": "./dist/fastify.js"
       },
       "require": {
-        "types": "./dist/fastify.d.ts",
+        "types": "./dist/cjs/fastify.d.ts",
         "default": "./dist/fastify.cjs"
       }
     }
@@ -48,7 +58,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json",
+    "build": "tsup && node ../../scripts/build-types.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
