@@ -42,6 +42,14 @@ npm run test:browser:playwright --prefix packages/browser
 
 两个包各自维护 `package-lock.json`，服务端包在本地开发时通过 `file:../browser` 使用兄弟目录的浏览器包；正式安装使用 `@nexusmc-cn/nexusimage` peer dependency。
 
+### 换行符
+
+根目录 `.gitattributes` 明确要求源码、脚本、JSON/YAML 配置、Markdown 和 LICENSE 使用 LF，覆盖本机 `core.autocrlf` 设置；Prettier 继续使用默认的 LF 检查。图片、WASM、原生模块、压缩包及构建/测试产物不做换行符转换。新增文本类型时应补充对应规则，避免将二进制资源标记为 `text`。
+
+已有克隆若保留了 CRLF 工作区文件，先提交或备份本地修改，再重新克隆，或仅对受影响的干净文件执行 `git checkout-index --force -- <路径>` 以重新检出。无需全仓格式化或批量重写文件。
+
+运行 `node scripts/check-line-endings.mjs` 可检查当前工作区，并在临时仓库中验证 `core.autocrlf=false/input/true` 的真实检出、文本规范化及二进制/构建产物字节保持。CI 在 Linux 和 Windows 上运行该回归检查及两个包的 `prepublishOnly → test:ci` 检查链，不执行发布。
+
 ## 发布
 
 - `vX.Y.Z` 发布 `@nexusmc-cn/nexusimage` 浏览器包。

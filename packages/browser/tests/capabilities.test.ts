@@ -122,7 +122,7 @@ describe('capability detection', () => {
     },
   );
 
-  it('retries rejected encodings and fallback MIME types with the HTML encoder', async () => {
+  it('uses HTML after an offscreen rejection but not after a MIME mismatch', async () => {
     installOffscreenCanvas((type) => {
       if (type === 'image/jpeg') throw new Error('JPEG encoding failed.');
       return encodedBlob('image/png');
@@ -131,9 +131,9 @@ describe('capability detection', () => {
 
     const capabilities = await probeCapabilities({ cache: false });
 
-    expect(capabilities.encodeFormats).toEqual(['png', 'jpeg', 'webp']);
+    expect(capabilities.encodeFormats).toEqual(['png', 'jpeg']);
     expect(canEncode('image/jpeg', capabilities)).toBe(true);
-    expect(canEncode('image/webp', capabilities)).toBe(true);
+    expect(canEncode('image/webp', capabilities)).toBe(false);
   });
 
   it('does not claim a codec when both encoders return a fallback MIME type', async () => {
@@ -234,4 +234,26 @@ describe('capability detection', () => {
     expect(refreshed.encodeFormats).toEqual(['png']);
     expect(await probeFreshRuntime()).toBe(first);
   });
+});
+
+it('keeps worker probes usable and treats failed encoders without a DOM as unconfirmed', async () => {
+  vi.stubGlobal('document', undefined);
+  vi.stubGlobal('HTMLCanvasElement', undefined);
+  const getContext = vi.fn(() => ({}));
+  const convertToBlob = vi.fn(async (options?: { type?: string }) => new Blob(['x'], { type: options?.type }));
+  class WorkerCanvas {
+    getContext = getContext;
+    convertToBlob = convertToBlob;
+  }
+  WorkerCanvas.prototype.convertToBlob = convertToBlob;
+  vi.stubGlobal('OffscreenCanvas', WorkerCanvas);
+
+  expect((await probeCapabilities({ cache: false })).encodeFormats).toEqual(['png', 'jpeg', 'webp']);
+  expect(getContext).toHaveBeenCalledWith('2d');
+  convertToBlob.mockRejectedValue(new Error('encoding failed'));
+  expect((await probeCapabilities({ cache: false })).encodeFormats).toEqual([]);
+  getContext.mockReturnValue(null as unknown as object);
+  convertToBlob.mockClear();
+  expect((await probeCapabilities({ cache: false })).encodeFormats).toEqual([]);
+  expect(convertToBlob).not.toHaveBeenCalled();
 });

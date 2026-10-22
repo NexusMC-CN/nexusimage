@@ -1,1 +1,36 @@
-* text=auto eol=lf
+# Detect unlisted text without treating unknown binary files as text.
+* text=auto
+
+# Source, scripts, configuration, documentation and extensionless metadata.
+*.ts text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+LICENSE text eol=lf
+
+# Image payloads, native/WASM modules and archives must retain their bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.wasm binary
+*.node binary
+*.zip binary
+*.gz binary
+*.tgz binary
+
+# Generated artifacts remain byte-for-byte intact, including JS/JSON outputs.
+**/dist/** -text
+**/coverage/** -text
+**/test-results/** -text
+**/playwright-report/** -text
