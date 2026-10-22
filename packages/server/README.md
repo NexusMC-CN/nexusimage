@@ -9,7 +9,7 @@ NexusImage 的 Node.js 运行时适配包。它使用 `sharp` 完成图片解码
 npm install @nexusmc-cn/nexusimage-node @nexusmc-cn/nexusimage
 ```
 
-本包要求 Node.js 20 或更高版本。`@nexusmc-cn/nexusimage` 是共享契约的 peer dependency，
+本包要求 Node.js 20.9.0 或更高版本。`@nexusmc-cn/nexusimage` 是共享契约的 peer dependency，
 `sharp` 是默认的原生图片处理引擎。
 
 ## 与框架无关的服务

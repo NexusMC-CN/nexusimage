@@ -1,4 +1,4 @@
-import type { ImageFormat } from './format';
+import type { ImageFormat } from './format.js';
 
 export type ImageSource = Blob | File | ArrayBuffer | Uint8Array | string | URL;
 

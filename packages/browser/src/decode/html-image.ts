@@ -1,8 +1,8 @@
-import { NexusImageError, throwIfAborted } from '../errors';
-import { awaitWithAbort } from '../abort';
-import { createObjectUrl } from '../source';
-import type { NormalizedSource } from '../source';
-import type { DecodeAdapter, DecodedImage, DrawTarget } from './adapter';
+import { NexusImageError, throwIfAborted } from '../errors.js';
+import { awaitWithAbort } from '../abort.js';
+import { createObjectUrl } from '../source.js';
+import type { NormalizedSource } from '../source.js';
+import type { DecodeAdapter, DecodedImage, DrawTarget } from './adapter.js';
 
 type ImageConstructor = new () => HTMLImageElement;
 

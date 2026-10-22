@@ -1,4 +1,4 @@
-import type { NormalizedSource } from '../source';
+import type { NormalizedSource } from '../source.js';
 
 export interface DrawTarget {
   drawImage(image: unknown, dx: number, dy: number, dw: number, dh: number): void;

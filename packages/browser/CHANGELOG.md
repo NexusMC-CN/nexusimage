@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2
+
+- Initialize canvas contexts and fall back to HTML canvas when probing encoding support.
+- Keep Git checkouts in LF format so Windows formatting and release checks match CI.
+
+## 0.2.1
+
+- Enforce URL input byte limits while downloading, cancelling oversized response streams.
+- Preserve the source aspect ratio when resizing with only a target height.
+- Fix published declarations for ESM and CommonJS consumers using NodeNext or Node16 resolution.
+- Clarify package descriptions, search keywords, documentation and issue links.
+
 ## 0.2.0
 
 - Added resource limits for input bytes, decoded pixels, output dimensions, encoded bytes, and URL fetch timeouts.

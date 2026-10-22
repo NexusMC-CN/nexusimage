@@ -1,7 +1,7 @@
-import { NexusImageError, throwIfAborted } from '../errors';
-import { awaitWithAbort } from '../abort';
-import type { EncodeOptions } from '../types';
-import type { CanvasSurface } from '../render/surface';
+import { NexusImageError, throwIfAborted } from '../errors.js';
+import { awaitWithAbort } from '../abort.js';
+import type { EncodeOptions } from '../types.js';
+import type { CanvasSurface } from '../render/surface.js';
 
 const DEFAULT_TYPE = 'image/png';
 

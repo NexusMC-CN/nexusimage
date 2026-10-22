@@ -1,4 +1,4 @@
-import { EXIF_TAGS, EXIF_TAG_NAMES } from './tags';
+import { EXIF_TAGS, EXIF_TAG_NAMES } from './tags.js';
 
 export type ExifValue = string | number;
 export interface ExifDiagnostic {

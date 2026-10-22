@@ -1,9 +1,9 @@
-import { awaitWithAbort } from './abort';
-import { NexusImageError, throwIfAborted } from './errors';
-import { htmlImageAdapter } from './decode/html-image';
-import { resolveResourceLimits } from './limits';
-import { normalizeSource, type NormalizedSource } from './source';
-import type { ImageProbeResult, ImageSource, ProbeOptions } from './types';
+import { awaitWithAbort } from './abort.js';
+import { NexusImageError, throwIfAborted } from './errors.js';
+import { htmlImageAdapter } from './decode/html-image.js';
+import { resolveResourceLimits } from './limits.js';
+import { normalizeSource, type NormalizedSource } from './source.js';
+import type { ImageProbeResult, ImageSource, ProbeOptions } from './types.js';
 
 type ImageConstructor = new () => HTMLImageElement;
 

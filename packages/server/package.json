@@ -1,7 +1,7 @@
 {
   "name": "@nexusmc-cn/nexusimage-node",
-  "version": "0.1.1",
-  "description": "Node.js Sharp adapter for NexusImage image processing.",
+  "version": "0.1.2",
+  "description": "Sharp-based image processing for Node.js with EXIF inspection, transforms, encoding and an optional Fastify adapter.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -55,7 +55,7 @@
     "directory": "packages/server"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.9.0"
   },
   "scripts": {
     "build": "tsup && node ../../scripts/build-types.mjs",
@@ -86,5 +86,35 @@
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
+  },
+  "homepage": "https://github.com/NexusMC-CN/nexusimage/blob/main/packages/server/README.md",
+  "bugs": {
+    "url": "https://github.com/NexusMC-CN/nexusimage/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "image",
+    "image-processing",
+    "image-resize",
+    "image-crop",
+    "image-compression",
+    "image-conversion",
+    "nodejs",
+    "sharp",
+    "exif",
+    "fastify",
+    "multipart",
+    "typescript",
+    "jpeg",
+    "png",
+    "webp",
+    "gif",
+    "avif",
+    "tiff"
+  ],
+  "peerDependenciesMeta": {
+    "fastify": {
+      "optional": true
+    }
   }
 }

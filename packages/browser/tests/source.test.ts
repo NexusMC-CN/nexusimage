@@ -23,21 +23,11 @@ it('revokes an object URL at most once', () => {
 });
 
 it('turns response body cancellation into ABORTED while reading a URL source', async () => {
-  let resolveBody!: (blob: Blob) => void;
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({
-      ok: true,
-      blob: () =>
-        new Promise<Blob>((resolve) => {
-          resolveBody = resolve;
-        }),
-    })),
-  );
+  const response = new Response(new ReadableStream<Uint8Array>());
+  vi.stubGlobal('fetch', async () => response);
   const controller = new AbortController();
   const pending = normalizeSource('https://example.test/image.png', controller.signal);
   await Promise.resolve();
   controller.abort();
-  resolveBody(new Blob(['image'], { type: 'image/png' }));
   await expect(pending).rejects.toMatchObject({ code: 'ABORTED', stage: 'source' });
 });

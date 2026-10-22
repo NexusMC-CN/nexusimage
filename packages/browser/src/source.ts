@@ -1,8 +1,9 @@
-import { NexusImageError, throwIfAborted } from './errors';
-import { awaitWithAbort } from './abort';
-import { detectImageFormat, type ImageFormatInfo } from './format';
-import { assertInputBytes, resolveResourceLimits, type ResolvedResourceLimits } from './limits';
-import type { ImageSource, ResourceLimits } from './types';
+import { NexusImageError, throwIfAborted } from './errors.js';
+import { awaitWithAbort } from './abort.js';
+import { readResponseBlob } from './source/read-response.js';
+import { detectImageFormat, type ImageFormatInfo } from './format.js';
+import { assertInputBytes, resolveResourceLimits, type ResolvedResourceLimits } from './limits.js';
+import type { ImageSource, ResourceLimits } from './types.js';
 
 export interface NormalizedSource {
   readonly blob: Blob;
@@ -117,7 +118,7 @@ export async function normalizeSource(
       response = await fetch(String(source), timeout.signal ? { signal: timeout.signal } : {});
       if (!response.ok)
         throw new NexusImageError('INVALID_SOURCE', 'source', `Unable to fetch image source (${response.status}).`);
-      blob = await awaitWithAbort(response.blob(), timeout.signal, undefined, undefined, 'source');
+      blob = await readResponseBlob(response, limits, timeout.signal);
     } catch (error) {
       if (error instanceof NexusImageError && !timeout.timedOut()) throw error;
       throwFetchError(error, timeout, signal);

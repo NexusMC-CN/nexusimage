@@ -6,6 +6,13 @@
 - Enforce input and output animation budgets, cancellation and output frame, timing and dimension checks; preserve existing first-frame processing.
 - Reject AVIF output when decoded frames contain transparency and report unavailable runtime binary or codec capabilities.
 
+## 0.1.2
+
+- Fix published ESM and CommonJS declarations for NodeNext and Node16 consumers.
+- Mark the Fastify peer optional for applications using only the framework-neutral service.
+- Align the minimum Node.js version with Sharp's Node.js 20.9.0 requirement.
+- Declare the MIT license and add package descriptions, search keywords, documentation and issue links.
+
 ## 0.1.1
 
 - Normalize EXIF orientation reported by Sharp for non-JPEG inputs.

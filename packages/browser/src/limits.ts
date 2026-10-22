@@ -1,5 +1,5 @@
-import { NexusImageError, type NexusImageErrorStage } from './errors';
-import type { ResourceLimits } from './types';
+import { NexusImageError, type NexusImageErrorStage } from './errors.js';
+import type { ResourceLimits } from './types.js';
 
 /** Conservative browser defaults that prevent accidental unbounded allocations. */
 export const DEFAULT_RESOURCE_LIMITS: Required<ResourceLimits> = Object.freeze({

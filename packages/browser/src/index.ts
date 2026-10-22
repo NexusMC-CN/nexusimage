@@ -1,14 +1,24 @@
-import { throwIfAborted, NexusImageError } from './errors';
-import { getCapabilities } from './capabilities';
-import { normalizeSource, type NormalizedSource } from './source';
-import { parseExif, stripExifOrientation } from './exif/parser';
-import { decoderCandidates } from './decode/select';
-import type { DecodedImage, DrawTarget } from './decode/adapter';
-import { createSurface, type CanvasSurface } from './render/surface';
-import { calculateFitRect, createTransformPlan, getOrientationMatrix, getOrientedDimensions } from './render/transform';
-import { encodeSurface } from './encode/to-blob';
-import { probeImage } from './probe';
-import { assertDecodedDimensions, assertEncodedBytes, assertOutputDimensions, resolveResourceLimits } from './limits';
+import { throwIfAborted, NexusImageError } from './errors.js';
+import { getCapabilities } from './capabilities.js';
+import { normalizeSource, type NormalizedSource } from './source.js';
+import { parseExif, stripExifOrientation } from './exif/parser.js';
+import { decoderCandidates } from './decode/select.js';
+import type { DecodedImage, DrawTarget } from './decode/adapter.js';
+import { createSurface, type CanvasSurface } from './render/surface.js';
+import {
+  calculateFitRect,
+  createTransformPlan,
+  getOrientationMatrix,
+  getOrientedDimensions,
+} from './render/transform.js';
+import { encodeSurface } from './encode/to-blob.js';
+import { probeImage } from './probe.js';
+import {
+  assertDecodedDimensions,
+  assertEncodedBytes,
+  assertOutputDimensions,
+  resolveResourceLimits,
+} from './limits.js';
 import type {
   EncodeOptions,
   EncodedImage,
@@ -19,19 +29,19 @@ import type {
   NexusImageApi,
   ProcessedImage,
   ProcessOptions,
-} from './types';
+} from './types.js';
 
-export * from './types';
-export * from './errors';
-export { getCapabilities, probeCapabilities, canDecode, canEncode } from './capabilities';
-export type { CapabilityProbeOptions } from './capabilities';
-export { detectImageFormat, formatFromMimeType, formatMimeType, supportedImageFormats } from './format';
-export type { ImageFormat, ImageFormatInfo } from './format';
-export { DEFAULT_RESOURCE_LIMITS, resolveResourceLimits } from './limits';
-export { inspectAnimation } from './decode/animation';
-export type { AnimationMetadata, AnimationInspectOptions, AnimationDecoderFactoryOptions } from './decode/animation';
-export { parseExif, stripExifOrientation } from './exif/parser';
-export { probeImage } from './probe';
+export * from './types.js';
+export * from './errors.js';
+export { getCapabilities, probeCapabilities, canDecode, canEncode } from './capabilities.js';
+export type { CapabilityProbeOptions } from './capabilities.js';
+export { detectImageFormat, formatFromMimeType, formatMimeType, supportedImageFormats } from './format.js';
+export type { ImageFormat, ImageFormatInfo } from './format.js';
+export { DEFAULT_RESOURCE_LIMITS, resolveResourceLimits } from './limits.js';
+export { inspectAnimation } from './decode/animation.js';
+export type { AnimationMetadata, AnimationInspectOptions, AnimationDecoderFactoryOptions } from './decode/animation.js';
+export { parseExif, stripExifOrientation } from './exif/parser.js';
+export { probeImage } from './probe.js';
 
 interface InternalAsset {
   readonly source: NormalizedSource;
@@ -161,7 +171,7 @@ function resolveTargetSize(
       ? { width: Math.round(width), height: Math.round(height) }
       : width !== undefined
         ? { width: Math.round(width), height: Math.round((width * source.height) / source.width) }
-        : { width: Math.round(height!), height: Math.round((height! * source.width) / source.height) };
+        : { width: Math.round((height! * source.width) / source.height), height: Math.round(height!) };
   if (rounded.width < 1 || rounded.height < 1)
     throw new NexusImageError('RENDER_FAILED', 'render', 'resize dimensions must round to at least 1 pixel.');
   return rounded;

@@ -5,7 +5,9 @@
   "scripts": {
     "test:browser": "npm run test:ci --prefix packages/browser",
     "test:server": "npm run test:ci --prefix packages/server",
-    "test:ci": "npm run test:browser && npm run test:server",
+    "test:ci": "npm run test:browser && npm run test:server && npm run format:check && npm run test:consumers",
+    "test:consumers": "npm ci --prefix tests/consumers --ignore-scripts --no-audit --no-fund && node scripts/check-consumers.mjs",
+    "format:check": "node packages/browser/node_modules/prettier/bin/prettier.cjs --check \"scripts/**/*.mjs\" \"tests/consumers/*.{mts,cts,mjs,json}\" package.json .prettierrc.json .github/workflows/ci.yml",
     "build": "npm run build --prefix packages/browser && npm run build --prefix packages/server",
     "pack:check": "npm run pack:check --prefix packages/browser && npm run pack:check --prefix packages/server"
   }

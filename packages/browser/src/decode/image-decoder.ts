@@ -1,7 +1,7 @@
-import { NexusImageError, throwIfAborted } from '../errors';
-import { awaitWithAbort } from '../abort';
-import type { NormalizedSource } from '../source';
-import type { DecodeAdapter, DecodedImage, DrawTarget } from './adapter';
+import { NexusImageError, throwIfAborted } from '../errors.js';
+import { awaitWithAbort } from '../abort.js';
+import type { NormalizedSource } from '../source.js';
+import type { DecodeAdapter, DecodedImage, DrawTarget } from './adapter.js';
 
 interface DecoderResult {
   image: {

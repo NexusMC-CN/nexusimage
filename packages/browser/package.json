@@ -1,7 +1,7 @@
 {
   "name": "@nexusmc-cn/nexusimage",
-  "version": "0.2.0",
-  "description": "NexusImage: browser-native image loading, EXIF, canvas processing and optimization.",
+  "version": "0.2.2",
+  "description": "Browser-native image loading, resizing, transforms, EXIF parsing and encoding with Canvas and OffscreenCanvas.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -13,7 +13,7 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/cjs/index.d.ts",
         "default": "./dist/index.cjs"
       }
     },
@@ -23,7 +23,7 @@
         "default": "./dist/contracts.js"
       },
       "require": {
-        "types": "./dist/contracts.d.ts",
+        "types": "./dist/cjs/contracts.d.ts",
         "default": "./dist/contracts.cjs"
       }
     }
@@ -48,7 +48,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json",
+    "build": "tsup && node ../../scripts/build-types.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -62,10 +62,17 @@
   },
   "keywords": [
     "image",
+    "image-processing",
+    "image-resize",
+    "image-crop",
+    "image-compression",
+    "image-conversion",
+    "browser",
     "canvas",
     "offscreen-canvas",
-    "exif",
     "image-bitmap",
+    "image-decoder",
+    "exif",
     "typescript",
     "jpeg",
     "png",
@@ -81,5 +88,9 @@
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
+  },
+  "homepage": "https://github.com/NexusMC-CN/nexusimage/blob/main/packages/browser/README.md",
+  "bugs": {
+    "url": "https://github.com/NexusMC-CN/nexusimage/issues"
   }
 }

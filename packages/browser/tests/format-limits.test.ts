@@ -74,10 +74,7 @@ it('enforces source byte and URL timeout limits before decoding', async () => {
     code: 'RESOURCE_LIMIT',
     stage: 'source',
   });
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({ ok: true, blob: () => new Promise<Blob>(() => {}) })),
-  );
+  vi.stubGlobal('fetch', async () => new Response(new ReadableStream<Uint8Array>()));
   await expect(
     normalizeSource('https://example.test/slow.png', undefined, { fetchTimeoutMs: 5 }),
   ).rejects.toMatchObject({ code: 'RESOURCE_LIMIT', stage: 'source' });

@@ -1,5 +1,5 @@
-import { formatFromMimeType, formatMimeType, type ImageFormat, supportedImageFormats } from './format';
-import type { DecodeMode, ImageCapabilities } from './types';
+import { formatFromMimeType, formatMimeType, type ImageFormat, supportedImageFormats } from './format.js';
+import type { DecodeMode, ImageCapabilities } from './types.js';
 
 type BrowserGlobal = typeof globalThis & {
   ImageDecoder?: {
@@ -17,6 +17,9 @@ type BrowserGlobal = typeof globalThis & {
 };
 
 interface ProbeCanvas {
+  width: number;
+  height: number;
+  getContext(type: '2d'): unknown;
   toBlob?: (callback: (blob: Blob | null) => void, type?: string, quality?: number) => void;
   convertToBlob?: (options?: { type?: string; quality?: number }) => Promise<Blob>;
 }
@@ -66,29 +69,26 @@ export function getCapabilities(): ImageCapabilities {
   };
 }
 
-function resolveProbeCanvas(globals: BrowserGlobal): ProbeCanvas | undefined {
-  if (
-    typeof globals.OffscreenCanvas === 'function' &&
-    typeof globals.OffscreenCanvas.prototype?.convertToBlob === 'function'
-  ) {
-    try {
-      return new globals.OffscreenCanvas(1, 1);
-    } catch {
-      /* fall through to HTML canvas */
+function resolveProbeCanvas(globals: BrowserGlobal, kind: 'offscreen' | 'html'): ProbeCanvas | undefined {
+  try {
+    let canvas: ProbeCanvas;
+    if (kind === 'offscreen') {
+      if (
+        typeof globals.OffscreenCanvas !== 'function' ||
+        typeof globals.OffscreenCanvas.prototype?.convertToBlob !== 'function'
+      )
+        return undefined;
+      canvas = new globals.OffscreenCanvas(1, 1);
+    } else {
+      if (typeof globals.document?.createElement !== 'function') return undefined;
+      canvas = globals.document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
     }
+    return canvas.getContext('2d') ? canvas : undefined;
+  } catch {
+    return undefined;
   }
-  if (typeof globals.document?.createElement === 'function') {
-    try {
-      return globals.document.createElement('canvas');
-    } catch {
-      /* fall through */
-    }
-  }
-  // A prototype-only test double is also useful in non-DOM runtimes. Real
-  // browsers normally take the document path above.
-  const prototypeToBlob = globals.HTMLCanvasElement?.prototype?.toBlob as unknown;
-  if (typeof prototypeToBlob === 'function') return Object.create(globals.HTMLCanvasElement.prototype) as ProbeCanvas;
-  return undefined;
 }
 
 async function probeCanvasMimeType(canvas: ProbeCanvas, type: string, timeoutMs: number): Promise<boolean> {
@@ -96,7 +96,7 @@ async function probeCanvasMimeType(canvas: ProbeCanvas, type: string, timeoutMs:
   if (typeof canvas.convertToBlob === 'function') {
     try {
       const blob = await canvas.convertToBlob({ type });
-      return blob.type.trim().toLowerCase() === expected;
+      return blob.size > 0 && blob.type.trim().toLowerCase() === expected;
     } catch {
       return false;
     }
@@ -113,7 +113,11 @@ async function probeCanvasMimeType(canvas: ProbeCanvas, type: string, timeoutMs:
     };
     const timer = setTimeout(() => finish(false), timeoutMs);
     try {
-      toBlob.call(canvas, (blob) => finish(Boolean(blob && blob.type.trim().toLowerCase() === expected)), type);
+      toBlob.call(
+        canvas,
+        (blob) => finish(Boolean(blob && blob.size > 0 && blob.type.trim().toLowerCase() === expected)),
+        type,
+      );
     } catch {
       finish(false);
     }
@@ -153,12 +157,21 @@ export async function probeCapabilities(options: CapabilityProbeOptions = {}): P
   const baseline = getCapabilities();
   const task = (async () => {
     const decodeFormats = await probeDecodeFormats(globals);
-    const canvas = resolveProbeCanvas(globals);
+    const offscreenCanvas = resolveProbeCanvas(globals, 'offscreen');
+    let htmlCanvas: ProbeCanvas | undefined;
+    let htmlCanvasResolved = false;
     const encodeFormats: ImageFormat[] = [];
-    if (canvas) {
-      for (const format of ENCODE_PROBE_FORMATS) {
-        if (await probeCanvasMimeType(canvas, formatMimeType(format), timeoutMs)) encodeFormats.push(format);
+    for (const format of ENCODE_PROBE_FORMATS) {
+      const type = formatMimeType(format);
+      if (offscreenCanvas && (await probeCanvasMimeType(offscreenCanvas, type, timeoutMs))) {
+        encodeFormats.push(format);
+        continue;
       }
+      if (!htmlCanvasResolved) {
+        htmlCanvas = resolveProbeCanvas(globals, 'html');
+        htmlCanvasResolved = true;
+      }
+      if (htmlCanvas && (await probeCanvasMimeType(htmlCanvas, type, timeoutMs))) encodeFormats.push(format);
     }
     return {
       ...baseline,

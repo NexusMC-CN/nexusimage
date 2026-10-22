@@ -34,3 +34,54 @@ test('loads, resizes and encodes a static image in the browser', async ({ page }
   expect(result.size).toBeGreaterThan(0);
   expect(result.capabilities.canvasToBlob).toBe(true);
 });
+
+test('resizes a landscape image by height and encodes the expected dimensions', async ({ page }) => {
+  const result = await page.evaluate(async (bundleUrl) => {
+    const { NexusImage } = await import(bundleUrl);
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 800;
+    const source = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('PNG fixture encoding failed.'))), 'image/png');
+    });
+    const processed = await NexusImage.process(source, { resize: { height: 400 } });
+    try {
+      const encoded = await NexusImage.encode(processed, { type: 'image/png' });
+      const output = await NexusImage.load(encoded.blob);
+      try {
+        return {
+          processed: [processed.width, processed.height],
+          encoded: [output.metadata.width, output.metadata.height],
+        };
+      } finally {
+        output.dispose();
+      }
+    } finally {
+      processed.dispose();
+    }
+  }, bundleUrl);
+
+  expect(result.processed).toEqual([600, 400]);
+  expect(result.encoded).toEqual([600, 400]);
+});
+
+test('probes PNG, JPEG and WebP encoders in Chromium', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'This regression asserts Chromium codec support.');
+  const result = await page.evaluate(async (bundleUrl) => {
+    const { probeCapabilities, canEncode } = await import(bundleUrl);
+    const capabilities = await probeCapabilities({ cache: false });
+    return {
+      encodeFormats: capabilities.encodeFormats,
+      png: canEncode('image/png', capabilities),
+      jpeg: canEncode('image/jpeg', capabilities),
+      webp: canEncode('image/webp', capabilities),
+      avif: canEncode('image/avif', capabilities),
+    };
+  }, bundleUrl);
+
+  expect(result.encodeFormats).toEqual(['png', 'jpeg', 'webp']);
+  expect(result.png).toBe(true);
+  expect(result.jpeg).toBe(true);
+  expect(result.webp).toBe(true);
+  expect(result.avif).toBe(false);
+});

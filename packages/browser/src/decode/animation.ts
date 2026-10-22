@@ -1,8 +1,8 @@
-import { awaitWithAbort } from '../abort';
-import { NexusImageError, throwIfAborted } from '../errors';
-import { normalizeSource, type NormalizedSource } from '../source';
-import type { ImageSource, ResourceLimits } from '../types';
-import type { ImageFormat } from '../format';
+import { awaitWithAbort } from '../abort.js';
+import { NexusImageError, throwIfAborted } from '../errors.js';
+import { normalizeSource, type NormalizedSource } from '../source.js';
+import type { ImageSource, ResourceLimits } from '../types.js';
+import type { ImageFormat } from '../format.js';
 
 /** Frame-level metadata exposed by the browser ImageDecoder track. */
 export interface AnimationMetadata {

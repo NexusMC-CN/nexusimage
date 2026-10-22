@@ -1,5 +1,5 @@
-import { NexusImageError } from '../errors';
-import type { ImageCapabilities } from '../types';
+import { NexusImageError } from '../errors.js';
+import type { ImageCapabilities } from '../types.js';
 
 export interface CanvasSurface {
   readonly canvas: {

@@ -1,0 +1,8 @@
+{
+  "name": "nexusimage-consumer-checks",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "24.19.2"
+  }
+}

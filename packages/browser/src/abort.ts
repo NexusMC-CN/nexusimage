@@ -1,5 +1,5 @@
-import { NexusImageError } from './errors';
-import type { NexusImageErrorStage } from './errors';
+import { NexusImageError } from './errors.js';
+import type { NexusImageErrorStage } from './errors.js';
 
 export function awaitWithAbort<T>(
   promise: Promise<T>,
